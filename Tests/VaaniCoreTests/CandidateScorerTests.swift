@@ -95,11 +95,38 @@ import Testing
         }
     }
 
-    @Test func missingComponentWeightRejectedAtInit() {
-        let incomplete = ScoringWeights(values: [.acousticConfidence: 1.0])
+    @Test func missingComponentWeightRejectedAtInit() throws {
+        let incomplete = try ScoringWeights(values: [.acousticConfidence: 1.0])
         #expect(throws: (any Error).self) {
             try CandidateScorer(weights: incomplete, latencyBudgetMilliseconds: 500)
         }
+    }
+
+    // MARK: - ScoringWeights validation
+
+    @Test func scoringWeightsRejectsNaN() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ScoringWeights(values: [.acousticConfidence: .nan])
+        }
+    }
+
+    @Test func scoringWeightsRejectsInfinity() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ScoringWeights(values: [.acousticConfidence: .infinity])
+        }
+    }
+
+    @Test func scoringWeightsRejectsNegativeValue() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ScoringWeights(values: [.hallucinationPenalty: -0.1])
+        }
+    }
+
+    @Test func scoringWeightsAcceptsCompleteValidDictionary() throws {
+        let weights = try ScoringWeights(
+            values: Dictionary(uniqueKeysWithValues: ScoreComponent.allCases.map { ($0, 0.1) })
+        )
+        #expect(weights.values.count == ScoreComponent.allCases.count)
     }
 
     @Test func hallucinationPenaltyAppliesOnlyToEmptyText() throws {
@@ -138,7 +165,7 @@ import Testing
     // MARK: - Tie-breaking
 
     private func zeroWeightScorer() throws -> CandidateScorer {
-        let zero = ScoringWeights(
+        let zero = try ScoringWeights(
             values: Dictionary(uniqueKeysWithValues: ScoreComponent.allCases.map { ($0, 0.0) })
         )
         return try CandidateScorer(weights: zero, latencyBudgetMilliseconds: 500)

@@ -23,7 +23,10 @@ import Testing
         activeDomains: Set<String> = []
     ) throws -> EvidenceSnapshot {
         let languages = try LanguageDistribution(values: values)
-        return try EvidenceSnapshot(languages: languages, domains: [:], activeDomains: activeDomains, observations: 1)
+        let domains = Dictionary(uniqueKeysWithValues: activeDomains.map { ($0, 1.0) })
+        return try EvidenceSnapshot(
+            languages: languages, domains: domains, activeDomains: activeDomains, observations: 1
+        )
     }
 
     @Test func confidentEnglishRoutesToEnglishStreaming() throws {
@@ -77,6 +80,26 @@ import Testing
         )
         let decision = router.decide(evidence: evidence)
         #expect(decision.reasons[1] == "domain=baps,zeta")
+    }
+
+    @Test func gujaratiMixedEvidenceAtOrAboveThresholdRoutesToDual() throws {
+        // Mixed evidence at/above secondDecodeThreshold must force dual
+        // decoding symmetrically for Gujarati, not just English.
+        let router = AdaptiveRouter(
+            policy: try policy(confidentLanguageThreshold: 0.60, secondDecodeThreshold: 0.15)
+        )
+        let evidence = try snapshot(languages: [.gujarati: 0.60, .mixed: 0.40])
+        let decision = router.decide(evidence: evidence)
+        #expect(decision.route == .dual)
+    }
+
+    @Test func gujaratiRoutesToMultilingualWhenMixedBelowThreshold() throws {
+        let router = AdaptiveRouter(
+            policy: try policy(confidentLanguageThreshold: 0.60, secondDecodeThreshold: 0.15)
+        )
+        let evidence = try snapshot(languages: [.gujarati: 0.90, .mixed: 0.10])
+        let decision = router.decide(evidence: evidence)
+        #expect(decision.route == .multilingual)
     }
 
     @Test func routingPolicyRejectsOutOfRangeConfidentThreshold() {

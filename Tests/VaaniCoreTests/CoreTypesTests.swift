@@ -307,4 +307,22 @@ import Testing
         )
         #expect(snapshot.activeDomains == ["baps"])
     }
+
+    @Test func snapshotRejectsPhantomActiveDomain() throws {
+        let languages = try validDistribution()
+        #expect(throws: (any Error).self) {
+            try EvidenceSnapshot(languages: languages, domains: [:], activeDomains: ["baps"], observations: 1)
+        }
+    }
+
+    @Test func snapshotJSONDecodingRejectsPhantomActiveDomain() {
+        let badJSON = Data(
+            """
+            {"languages": {"en": 1.0}, "domains": {}, "activeDomains": ["baps"], "observations": 1}
+            """.utf8
+        )
+        #expect(throws: (any Error).self) {
+            try JSONDecoder().decode(EvidenceSnapshot.self, from: badJSON)
+        }
+    }
 }

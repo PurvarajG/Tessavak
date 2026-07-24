@@ -9,11 +9,24 @@ public enum ScoreComponent: String, Codable, CaseIterable, Hashable, Sendable {
 public struct ScoringWeights: Codable, Equatable, Sendable {
     public let values: [ScoreComponent: Double]
 
-    public init(values: [ScoreComponent: Double]) {
+    public init(values: [ScoreComponent: Double]) throws {
+        for (component, value) in values {
+            guard value.isFinite, value >= 0 else {
+                throw VaaniCoreError.invalidConfiguration(
+                    "scoring weight for \(component.rawValue) must be finite and non-negative, got \(value)"
+                )
+            }
+        }
         self.values = values
     }
 
-    public static let `default` = ScoringWeights(values: [
+    /// Bypasses validation for the literal, known-valid default weights
+    /// below, so `.default` never needs `try!`.
+    private init(trustedValues: [ScoreComponent: Double]) {
+        self.values = trustedValues
+    }
+
+    public static let `default` = ScoringWeights(trustedValues: [
         .acousticConfidence: 0.30,
         .languageAgreement: 0.20,
         .scriptAgreement: 0.10,
@@ -23,6 +36,15 @@ public struct ScoringWeights: Codable, Equatable, Sendable {
         .repetitionPenalty: 0.03,
         .latencyCost: 0.03,
     ])
+
+    private enum CodingKeys: String, CodingKey {
+        case values
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(values: try container.decode([ScoreComponent: Double].self, forKey: .values))
+    }
 }
 
 public struct CandidateScore: Codable, Equatable, Sendable {
@@ -81,6 +103,12 @@ public struct CandidateScorer: Sendable {
 
         let scores = candidates.map { candidate in
             score(candidate: candidate, evidence: evidence, protectedTerms: protectedTerms)
+        }
+
+        for score in scores where !score.total.isFinite {
+            throw VaaniCoreError.invalidConfiguration(
+                "computed score total for candidate \(score.candidateID) is not finite: \(score.total)"
+            )
         }
 
         let bestIndex = scores.indices.min { lhsIndex, rhsIndex in

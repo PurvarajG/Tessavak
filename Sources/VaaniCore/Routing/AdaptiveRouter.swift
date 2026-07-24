@@ -42,11 +42,15 @@ public struct AdaptiveRouter: Sendable {
             "mixed=\(Self.format3(mixedProbability))",
         ]
 
+        // Mixed evidence at or above the second-decode threshold forces dual
+        // decoding regardless of dominant language: no single-model route
+        // may be returned on ambiguous evidence, for English or Gujarati.
         let route: Route
-        if dominant.language == .english,
+        if mixedProbability >= policy.secondDecodeThreshold {
+            route = .dual
+        } else if dominant.language == .english,
             dominant.probability >= policy.confidentLanguageThreshold,
-            !hasActiveDomain,
-            mixedProbability < policy.secondDecodeThreshold
+            !hasActiveDomain
         {
             route = .englishStreaming
         } else if dominant.language == .gujarati,

@@ -75,6 +75,12 @@ public struct EvidenceSnapshot: Codable, Equatable, Sendable {
         guard observations >= 0 else {
             throw VaaniCoreError.invalidConfiguration("observations must be non-negative, got \(observations)")
         }
+        let unknownDomains = activeDomains.subtracting(domains.keys)
+        guard unknownDomains.isEmpty else {
+            throw VaaniCoreError.invalidConfiguration(
+                "activeDomains contains domain(s) not present in domains: \(unknownDomains.sorted().joined(separator: ", "))"
+            )
+        }
         self.languages = languages
         self.domains = domains
         self.activeDomains = activeDomains
