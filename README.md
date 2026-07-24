@@ -35,6 +35,16 @@ shadow mode, and the W1 application are **not** implemented yet. See
 
 ```bash
 swift build
-swift test
+swift test --parallel
 swift run vaani-bench run --manifest Fixtures/replay/smoke.json --output Reports/smoke
+swift run vaani-bench run \
+  --manifest Fixtures/replay/smoke.json \
+  --output Reports/smoke \
+  --baseline Fixtures/baseline/smoke-baseline.json
+swift format lint --recursive --strict Sources Tests Package.swift
 ```
+
+`vaani-bench run` exits `0` on success, `2` if `--baseline` detects a
+regression, `64` for invalid input, and `70` for an internal failure. See
+[`docs/initial-build.md`](docs/initial-build.md) for the full developer
+handoff, including exact verification commands and their results.
