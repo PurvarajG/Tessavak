@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "utterances": [
+    {
+      "id": "utt-en-confident",
+      "subset": "clean-english",
+      "observations": [
+        {
+          "languages": { "en": 0.97, "mixed": 0.03 },
+          "domains": {},
+          "source": "recognizer",
+          "weight": 1.0,
+          "timestampMilliseconds": 0
+        }
+      ],
+      "candidates": [
+        {
+          "id": "utt-en-confident-c1",
+          "text": "Please schedule the meeting for tomorrow morning",
+          "confidence": 0.95,
+          "detectedLanguages": { "en": 0.97, "mixed": 0.03 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "fastEnglish", "version": "1" },
+          "latencyMilliseconds": 90
+        }
+      ],
+      "expectedText": "Please schedule the meeting for tomorrow morning",
+      "expectedRoute": "englishStreaming"
+    },
+    {
+      "id": "utt-gu-confident",
+      "subset": "gujarati-script",
+      "observations": [
+        {
+          "languages": { "en": 0.05, "gu": 0.90, "mixed": 0.05 },
+          "domains": {},
+          "source": "recognizer",
+          "weight": 1.0,
+          "timestampMilliseconds": 0
+        }
+      ],
+      "candidates": [
+        {
+          "id": "utt-gu-confident-c1",
+          "text": "આજે હવામાન સરસ છે",
+          "confidence": 0.90,
+          "detectedLanguages": { "en": 0.05, "gu": 0.90, "mixed": 0.05 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "multilingual", "version": "1" },
+          "latencyMilliseconds": 150
+        }
+      ],
+      "expectedText": "આજે હવામાન સરસ છે",
+      "expectedRoute": "multilingual"
+    },
+    {
+      "id": "utt-code-switch-mixed",
+      "subset": "code-switch",
+      "observations": [
+        {
+          "languages": { "en": 0.55, "gu": 0.40, "mixed": 0.05 },
+          "domains": {},
+          "source": "recognizer",
+          "weight": 1.0,
+          "timestampMilliseconds": 0
+        }
+      ],
+      "candidates": [
+        {
+          "id": "utt-code-switch-mixed-c1",
+          "text": "The meeting is scheduled",
+          "confidence": 0.90,
+          "detectedLanguages": { "en": 0.90, "gu": 0.05, "mixed": 0.05 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "fastEnglish", "version": "1" },
+          "latencyMilliseconds": 90
+        },
+        {
+          "id": "utt-code-switch-mixed-c2",
+          "text": "મીટિંગ સુનિશ્ચિત છે",
+          "confidence": 0.60,
+          "detectedLanguages": { "en": 0.10, "gu": 0.85, "mixed": 0.05 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "multilingual", "version": "1" },
+          "latencyMilliseconds": 200
+        }
+      ],
+      "expectedText": "The meeting is scheduled",
+      "expectedRoute": "dual"
+    },
+    {
+      "id": "utt-baps-correction",
+      "subset": "baps-terminology",
+      "observations": [
+        {
+          "languages": { "en": 0.10, "gu": 0.85, "mixed": 0.05 },
+          "domains": { "baps": 0.9 },
+          "source": "terminology",
+          "weight": 1.0,
+          "timestampMilliseconds": 0
+        }
+      ],
+      "candidates": [
+        {
+          "id": "utt-baps-correction-c1",
+          "text": "pramukh swami maharaj gave a talk on vachanamrut",
+          "confidence": 0.85,
+          "detectedLanguages": { "en": 0.10, "gu": 0.85, "mixed": 0.05 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "multilingual", "version": "1" },
+          "latencyMilliseconds": 180
+        }
+      ],
+      "expectedText": "Pramukh Swami Maharaj gave a talk on Vachanamrut",
+      "expectedRoute": "multilingual"
+    },
+    {
+      "id": "utt-collision-protection",
+      "subset": "collision-protection",
+      "observations": [
+        {
+          "languages": { "en": 0.95, "mixed": 0.05 },
+          "domains": {},
+          "source": "recognizer",
+          "weight": 1.0,
+          "timestampMilliseconds": 0
+        }
+      ],
+      "candidates": [
+        {
+          "id": "utt-collision-protection-c1",
+          "text": "The bapsist committee approved the budget for next year",
+          "confidence": 0.93,
+          "detectedLanguages": { "en": 0.95, "mixed": 0.05 },
+          "segments": [],
+          "model": { "provider": "replay", "name": "fastEnglish", "version": "1" },
+          "latencyMilliseconds": 85
+        }
+      ],
+      "expectedText": "The bapsist committee approved the budget for next year",
+      "expectedRoute": "englishStreaming"
+    }
+  ]
+}
