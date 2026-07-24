@@ -61,6 +61,11 @@ struct RunCommand: AsyncParsableCommand {
             )
             let runner = BenchRunner(pipeline: pipeline)
             report = try runner.run(replayManifest, baseline: baselineReport)
+        } catch let error as BaselineCompatibilityError {
+            FileHandle.standardError.write(
+                Data("vaani-bench: baseline is incompatible with the current manifest: \(error)\n".utf8)
+            )
+            throw ExitCode(64)
         } catch {
             FileHandle.standardError.write(Data("vaani-bench: benchmark failed: \(error)\n".utf8))
             throw ExitCode(70)
@@ -79,6 +84,13 @@ struct RunCommand: AsyncParsableCommand {
         )
 
         if !report.regressions.isEmpty {
+            for regression in report.regressions {
+                print(
+                    "vaani-bench: regression \(regression.metric): "
+                        + "baseline=\(regression.baseline) actual=\(regression.actual) "
+                        + "allowedDelta=\(regression.allowedDelta)"
+                )
+            }
             throw ExitCode(2)
         }
     }

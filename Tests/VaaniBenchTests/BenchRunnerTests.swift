@@ -84,7 +84,7 @@ import VaaniPacks
                 try result(text: "nope", route: .englishStreaming, latency: 10)
             ),
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(metrics.exactMatchRate == 0.5)
     }
 
@@ -99,7 +99,7 @@ import VaaniPacks
                 try result(text: "b", route: .dual, latency: 10)
             ),
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(metrics.routeAccuracy == 0.5)
     }
 
@@ -118,7 +118,7 @@ import VaaniPacks
                 try result(text: "c", route: .dual, latency: 10)
             ),
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(abs(metrics.dualDecodeRate - (2.0 / 3.0)) < 1e-9)
     }
 
@@ -134,7 +134,7 @@ import VaaniPacks
                 try result(text: "baps event", route: .multilingual, latency: 10)
             ),
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         #expect(metrics.protectedTermExactMatchRate == 0.5)
     }
 
@@ -145,7 +145,7 @@ import VaaniPacks
                 try result(text: "hello", route: .englishStreaming, latency: 10)
             )
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: ["BAPS"])
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: ["BAPS"])
         #expect(metrics.protectedTermExactMatchRate == 0)
     }
 
@@ -162,7 +162,7 @@ import VaaniPacks
                 try result(text: "other text", route: .englishStreaming, latency: 10)
             ),
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         #expect(metrics.falseDomainCorrectionRate == 0.5)
     }
 
@@ -175,7 +175,7 @@ import VaaniPacks
                 try result(text: "BAPS talk", route: .multilingual, latency: 10, corrections: [correction])
             )
         ]
-        let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
+        let metrics = try BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         // No plain-English-eligible utterances at all, so the rate must be 0, not NaN.
         #expect(metrics.falseDomainCorrectionRate == 0)
     }
@@ -194,8 +194,8 @@ import VaaniPacks
         #expect(!value.isNaN)
     }
 
-    @Test func computeMetricsOnEmptyEntriesIsZeroNotNaN() {
-        let metrics = BenchRunner.computeMetrics([], protectedTerms: [])
+    @Test func computeMetricsOnEmptyEntriesIsZeroNotNaN() throws {
+        let metrics = try BenchRunner.computeMetrics([], protectedTerms: [])
         #expect(metrics.utteranceCount == 0)
         #expect(metrics.exactMatchRate == 0)
         #expect(metrics.protectedTermExactMatchRate == 0)
@@ -214,8 +214,8 @@ import VaaniPacks
         falseDomain: Double = 0.0,
         routeAccuracy: Double = 1.0,
         dualDecode: Double = 0.0
-    ) -> BenchMetrics {
-        BenchMetrics(
+    ) throws -> BenchMetrics {
+        try BenchMetrics(
             utteranceCount: 5,
             exactMatchRate: exactMatch,
             protectedTermExactMatchRate: protectedTerm,
@@ -226,28 +226,28 @@ import VaaniPacks
         )
     }
 
-    @Test func noRegressionsWhenMetricsAreEqual() {
-        let baseline = metrics()
-        let actual = metrics()
+    @Test func noRegressionsWhenMetricsAreEqual() throws {
+        let baseline = try metrics()
+        let actual = try metrics()
         #expect(BenchRunner.compareToBaseline(actual: actual, baseline: baseline).isEmpty)
     }
 
-    @Test func noRegressionsWhenMetricsImprove() {
-        let baseline = metrics(exactMatch: 0.8, falseDomain: 0.1, routeAccuracy: 0.8, dualDecode: 0.3)
-        let actual = metrics(exactMatch: 0.9, falseDomain: 0.05, routeAccuracy: 0.9, dualDecode: 0.1)
+    @Test func noRegressionsWhenMetricsImprove() throws {
+        let baseline = try metrics(exactMatch: 0.8, falseDomain: 0.1, routeAccuracy: 0.8, dualDecode: 0.3)
+        let actual = try metrics(exactMatch: 0.9, falseDomain: 0.05, routeAccuracy: 0.9, dualDecode: 0.1)
         #expect(BenchRunner.compareToBaseline(actual: actual, baseline: baseline).isEmpty)
     }
 
-    @Test func exactMatchRegressionIsReportedExactly() {
-        let baseline = metrics(exactMatch: 0.9)
-        let actual = metrics(exactMatch: 0.8)
+    @Test func exactMatchRegressionIsReportedExactly() throws {
+        let baseline = try metrics(exactMatch: 0.9)
+        let actual = try metrics(exactMatch: 0.8)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(regressions == [Regression(metric: "exactMatchRate", baseline: 0.9, actual: 0.8, allowedDelta: 0)])
     }
 
-    @Test func protectedTermRegressionIsReportedExactly() {
-        let baseline = metrics(protectedTerm: 1.0)
-        let actual = metrics(protectedTerm: 0.9)
+    @Test func protectedTermRegressionIsReportedExactly() throws {
+        let baseline = try metrics(protectedTerm: 1.0)
+        let actual = try metrics(protectedTerm: 0.9)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(
             regressions == [
@@ -256,9 +256,9 @@ import VaaniPacks
         )
     }
 
-    @Test func falseDomainCorrectionRegressionIsReportedExactly() {
-        let baseline = metrics(falseDomain: 0.0)
-        let actual = metrics(falseDomain: 0.1)
+    @Test func falseDomainCorrectionRegressionIsReportedExactly() throws {
+        let baseline = try metrics(falseDomain: 0.0)
+        let actual = try metrics(falseDomain: 0.1)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(
             regressions == [
@@ -267,25 +267,251 @@ import VaaniPacks
         )
     }
 
-    @Test func routeAccuracyRegressionIsReportedExactly() {
-        let baseline = metrics(routeAccuracy: 1.0)
-        let actual = metrics(routeAccuracy: 0.8)
+    @Test func routeAccuracyRegressionIsReportedExactly() throws {
+        let baseline = try metrics(routeAccuracy: 1.0)
+        let actual = try metrics(routeAccuracy: 0.8)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(regressions == [Regression(metric: "routeAccuracy", baseline: 1.0, actual: 0.8, allowedDelta: 0)])
     }
 
-    @Test func dualDecodeRegressionIsReportedExactly() {
-        let baseline = metrics(dualDecode: 0.1)
-        let actual = metrics(dualDecode: 0.3)
+    @Test func dualDecodeRegressionIsReportedExactly() throws {
+        let baseline = try metrics(dualDecode: 0.1)
+        let actual = try metrics(dualDecode: 0.3)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(regressions == [Regression(metric: "dualDecodeRate", baseline: 0.1, actual: 0.3, allowedDelta: 0)])
     }
 
-    @Test func multipleRegressionsAreSortedByMetricName() {
-        let baseline = metrics(exactMatch: 0.9, routeAccuracy: 0.9)
-        let actual = metrics(exactMatch: 0.8, routeAccuracy: 0.8)
+    @Test func multipleRegressionsAreSortedByMetricName() throws {
+        let baseline = try metrics(exactMatch: 0.9, routeAccuracy: 0.9)
+        let actual = try metrics(exactMatch: 0.8, routeAccuracy: 0.8)
         let regressions = BenchRunner.compareToBaseline(actual: actual, baseline: baseline)
         #expect(regressions.map(\.metric) == ["exactMatchRate", "routeAccuracy"])
+    }
+
+    // MARK: - Subset regression qualification
+
+    @Test func subsetRegressionIsQualifiedWithSubsetName() throws {
+        let baselineSubsets = ["baps-terminology": try metrics(protectedTerm: 1.0)]
+        let actualSubsets = ["baps-terminology": try metrics(protectedTerm: 0.5)]
+        let regressions = BenchRunner.compareSubsetsToBaseline(actual: actualSubsets, baseline: baselineSubsets)
+        #expect(regressions.map(\.metric) == ["subset.baps-terminology.protectedTermExactMatchRate"])
+    }
+
+    @Test func equalOverallMetricsDoNotHideSubsetRegression() throws {
+        // A per-subset regression must surface even when every other subset
+        // is unchanged or improved, so it can never be averaged away.
+        let baselineSubsets = [
+            "baps-terminology": try metrics(protectedTerm: 1.0),
+            "clean-english": try metrics(exactMatch: 0.8),
+        ]
+        let actualSubsets = [
+            "baps-terminology": try metrics(protectedTerm: 0.5),
+            "clean-english": try metrics(exactMatch: 0.9),
+        ]
+        let regressions = BenchRunner.compareSubsetsToBaseline(actual: actualSubsets, baseline: baselineSubsets)
+        #expect(regressions.map(\.metric) == ["subset.baps-terminology.protectedTermExactMatchRate"])
+    }
+
+    // MARK: - BenchMetrics validation
+
+    @Test func benchMetricsRejectsNegativeUtteranceCount() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchMetrics(
+                utteranceCount: -1,
+                exactMatchRate: 1,
+                protectedTermExactMatchRate: 1,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: 10
+            )
+        }
+    }
+
+    @Test func benchMetricsRejectsRateOutsideZeroToOne() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchMetrics(
+                utteranceCount: 1,
+                exactMatchRate: 1.5,
+                protectedTermExactMatchRate: 1,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: 10
+            )
+        }
+    }
+
+    @Test func benchMetricsRejectsNonFiniteRate() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchMetrics(
+                utteranceCount: 1,
+                exactMatchRate: .nan,
+                protectedTermExactMatchRate: 1,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: 10
+            )
+        }
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchMetrics(
+                utteranceCount: 1,
+                exactMatchRate: 1,
+                protectedTermExactMatchRate: .infinity,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: 10
+            )
+        }
+    }
+
+    @Test func benchMetricsRejectsNegativeLatency() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchMetrics(
+                utteranceCount: 1,
+                exactMatchRate: 1,
+                protectedTermExactMatchRate: 1,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: -1
+            )
+        }
+    }
+
+    // MARK: - BenchReport validation
+
+    private func validMetrics() throws -> BenchMetrics {
+        try BenchMetrics(
+            utteranceCount: 5,
+            exactMatchRate: 1,
+            protectedTermExactMatchRate: 1,
+            falseDomainCorrectionRate: 0,
+            routeAccuracy: 1,
+            dualDecodeRate: 0,
+            medianFinalLatencyMilliseconds: 10
+        )
+    }
+
+    @Test func benchReportRejectsNonPositiveSchemaVersion() throws {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchReport(
+                schemaVersion: 0,
+                manifestSHA256: String(repeating: "a", count: 64),
+                metrics: try validMetrics(),
+                subsetMetrics: [:],
+                regressions: []
+            )
+        }
+    }
+
+    @Test func benchReportRejectsMalformedManifestHash() throws {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchReport(
+                schemaVersion: 1,
+                manifestSHA256: "not-a-hash",
+                metrics: try validMetrics(),
+                subsetMetrics: [:],
+                regressions: []
+            )
+        }
+        #expect(throws: VaaniCoreError.self) {
+            _ = try BenchReport(
+                schemaVersion: 1,
+                manifestSHA256: String(repeating: "a", count: 63),
+                metrics: try validMetrics(),
+                subsetMetrics: [:],
+                regressions: []
+            )
+        }
+    }
+
+    // MARK: - Baseline compatibility gating
+
+    private func compatibilityBaseline(
+        schemaVersion: Int = BenchReport.currentSchemaVersion,
+        manifestSHA256: String = String(repeating: "a", count: 64),
+        utteranceCount: Int = 5,
+        subsets: [String] = []
+    ) throws -> BenchReport {
+        var subsetMetrics: [String: BenchMetrics] = [:]
+        for subset in subsets {
+            subsetMetrics[subset] = try validMetrics()
+        }
+        return try BenchReport(
+            schemaVersion: schemaVersion,
+            manifestSHA256: manifestSHA256,
+            metrics: try BenchMetrics(
+                utteranceCount: utteranceCount,
+                exactMatchRate: 1,
+                protectedTermExactMatchRate: 1,
+                falseDomainCorrectionRate: 0,
+                routeAccuracy: 1,
+                dualDecodeRate: 0,
+                medianFinalLatencyMilliseconds: 10
+            ),
+            subsetMetrics: subsetMetrics,
+            regressions: []
+        )
+    }
+
+    @Test func runThrowsOnSchemaVersionMismatch() throws {
+        let manifestData = try Data(contentsOf: fixtureURL("Fixtures/replay/smoke.json"))
+        let manifest = try JSONDecoder().decode(ReplayManifest.self, from: manifestData)
+        let runner = BenchRunner(pipeline: try makePipeline())
+        let sha = try BenchRunner.manifestSHA256(manifest)
+        let baseline = try compatibilityBaseline(schemaVersion: 2, manifestSHA256: sha)
+        #expect(throws: BaselineCompatibilityError.self) {
+            _ = try runner.run(manifest, baseline: baseline)
+        }
+    }
+
+    @Test func runThrowsOnManifestHashMismatch() throws {
+        let manifestData = try Data(contentsOf: fixtureURL("Fixtures/replay/smoke.json"))
+        let manifest = try JSONDecoder().decode(ReplayManifest.self, from: manifestData)
+        let runner = BenchRunner(pipeline: try makePipeline())
+        let baseline = try compatibilityBaseline(manifestSHA256: String(repeating: "b", count: 64))
+        #expect(throws: BaselineCompatibilityError.self) {
+            _ = try runner.run(manifest, baseline: baseline)
+        }
+    }
+
+    @Test func runThrowsOnUtteranceCountMismatch() throws {
+        let manifestData = try Data(contentsOf: fixtureURL("Fixtures/replay/smoke.json"))
+        let manifest = try JSONDecoder().decode(ReplayManifest.self, from: manifestData)
+        let runner = BenchRunner(pipeline: try makePipeline())
+        let sha = try BenchRunner.manifestSHA256(manifest)
+        let baseline = try compatibilityBaseline(manifestSHA256: sha, utteranceCount: 999)
+        #expect(throws: BaselineCompatibilityError.self) {
+            _ = try runner.run(manifest, baseline: baseline)
+        }
+    }
+
+    @Test func runThrowsOnSubsetKeySetMismatch() throws {
+        let manifestData = try Data(contentsOf: fixtureURL("Fixtures/replay/smoke.json"))
+        let manifest = try JSONDecoder().decode(ReplayManifest.self, from: manifestData)
+        let runner = BenchRunner(pipeline: try makePipeline())
+        let sha = try BenchRunner.manifestSHA256(manifest)
+        let baseline = try compatibilityBaseline(manifestSHA256: sha, utteranceCount: 5, subsets: ["not-a-real-subset"])
+        #expect(throws: BaselineCompatibilityError.self) {
+            _ = try runner.run(manifest, baseline: baseline)
+        }
+    }
+
+    // MARK: - Canonical manifest hashing
+
+    @Test func reorderedEquivalentManifestsProduceSameHash() throws {
+        let manifestData = try Data(contentsOf: fixtureURL("Fixtures/replay/smoke.json"))
+        let manifest = try JSONDecoder().decode(ReplayManifest.self, from: manifestData)
+        let reversed = try ReplayManifest(
+            schemaVersion: manifest.schemaVersion,
+            utterances: Array(manifest.utterances.reversed())
+        )
+        let originalHash = try BenchRunner.manifestSHA256(manifest)
+        let reversedHash = try BenchRunner.manifestSHA256(reversed)
+        #expect(originalHash == reversedHash)
     }
 
     // MARK: - Integration against the checked-in smoke fixture

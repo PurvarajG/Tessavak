@@ -1,4 +1,5 @@
 import Foundation
+import VaaniCore
 
 public struct BenchMetrics: Codable, Equatable, Sendable {
     public let utteranceCount: Int
@@ -17,7 +18,28 @@ public struct BenchMetrics: Codable, Equatable, Sendable {
         routeAccuracy: Double,
         dualDecodeRate: Double,
         medianFinalLatencyMilliseconds: Double
-    ) {
+    ) throws {
+        guard utteranceCount >= 0 else {
+            throw VaaniCoreError.invalidConfiguration("utteranceCount must be non-negative, got \(utteranceCount)")
+        }
+        let rates: [(field: String, value: Double)] = [
+            ("exactMatchRate", exactMatchRate),
+            ("protectedTermExactMatchRate", protectedTermExactMatchRate),
+            ("falseDomainCorrectionRate", falseDomainCorrectionRate),
+            ("routeAccuracy", routeAccuracy),
+            ("dualDecodeRate", dualDecodeRate),
+        ]
+        for rate in rates {
+            guard rate.value.isFinite, rate.value >= 0, rate.value <= 1 else {
+                throw VaaniCoreError.invalidProbability(field: rate.field, value: rate.value)
+            }
+        }
+        guard medianFinalLatencyMilliseconds.isFinite, medianFinalLatencyMilliseconds >= 0 else {
+            throw VaaniCoreError.invalidConfiguration(
+                "medianFinalLatencyMilliseconds must be finite and non-negative, "
+                    + "got \(medianFinalLatencyMilliseconds)"
+            )
+        }
         self.utteranceCount = utteranceCount
         self.exactMatchRate = exactMatchRate
         self.protectedTermExactMatchRate = protectedTermExactMatchRate
@@ -25,6 +47,26 @@ public struct BenchMetrics: Codable, Equatable, Sendable {
         self.routeAccuracy = routeAccuracy
         self.dualDecodeRate = dualDecodeRate
         self.medianFinalLatencyMilliseconds = medianFinalLatencyMilliseconds
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case utteranceCount, exactMatchRate, protectedTermExactMatchRate, falseDomainCorrectionRate
+        case routeAccuracy, dualDecodeRate, medianFinalLatencyMilliseconds
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            utteranceCount: try container.decode(Int.self, forKey: .utteranceCount),
+            exactMatchRate: try container.decode(Double.self, forKey: .exactMatchRate),
+            protectedTermExactMatchRate: try container.decode(Double.self, forKey: .protectedTermExactMatchRate),
+            falseDomainCorrectionRate: try container.decode(Double.self, forKey: .falseDomainCorrectionRate),
+            routeAccuracy: try container.decode(Double.self, forKey: .routeAccuracy),
+            dualDecodeRate: try container.decode(Double.self, forKey: .dualDecodeRate),
+            medianFinalLatencyMilliseconds: try container.decode(
+                Double.self, forKey: .medianFinalLatencyMilliseconds
+            )
+        )
     }
 }
 
@@ -57,12 +99,41 @@ public struct BenchReport: Codable, Equatable, Sendable {
         metrics: BenchMetrics,
         subsetMetrics: [String: BenchMetrics],
         regressions: [Regression]
-    ) {
+    ) throws {
+        guard schemaVersion >= 1 else {
+            throw VaaniCoreError.invalidConfiguration(
+                "schemaVersion must be a positive integer, got \(schemaVersion)"
+            )
+        }
+        guard Self.isValidManifestSHA256(manifestSHA256) else {
+            throw VaaniCoreError.invalidConfiguration(
+                "manifestSHA256 must be 64 hexadecimal characters, got '\(manifestSHA256)'"
+            )
+        }
         self.schemaVersion = schemaVersion
         self.manifestSHA256 = manifestSHA256
         self.metrics = metrics
         self.subsetMetrics = subsetMetrics
         self.regressions = regressions
+    }
+
+    private static func isValidManifestSHA256(_ value: String) -> Bool {
+        value.count == 64 && value.allSatisfy(\.isHexDigit)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, manifestSHA256, metrics, subsetMetrics, regressions
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            schemaVersion: try container.decode(Int.self, forKey: .schemaVersion),
+            manifestSHA256: try container.decode(String.self, forKey: .manifestSHA256),
+            metrics: try container.decode(BenchMetrics.self, forKey: .metrics),
+            subsetMetrics: try container.decode([String: BenchMetrics].self, forKey: .subsetMetrics),
+            regressions: try container.decode([Regression].self, forKey: .regressions)
+        )
     }
 }
 

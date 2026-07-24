@@ -1,5 +1,5 @@
 {
-  "manifestSHA256" : "0720a7b3b078187678db05646106b8e91f6587a71b270741642e69f1bca44da6",
+  "manifestSHA256" : "cde47a69054d08182ca0e035fa00819383f863a82addeea6a50b219c00db59c1",
   "metrics" : {
     "dualDecodeRate" : 0.2,
     "exactMatchRate" : 1,
