@@ -4,11 +4,25 @@
 DerivedData/
 *.xcresult
 
-# Private audio corpus
+# Private audio corpus. This is a secondary defense: the primary rule is
+# organizational — private manifests, labels, transcripts, and speaker
+# metadata must stay outside this repository entirely, not merely ignored.
 *.wav
+*.WAV
 *.m4a
+*.M4A
 *.mp3
+*.MP3
+*.flac
+*.FLAC
+*.caf
+*.CAF
+*.aiff
+*.AIFF
+*.aac
+*.AAC
 Corpus/Private/
+Corpus/private/
 
 # Generated benchmark output
 Reports/

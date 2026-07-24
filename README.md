@@ -33,6 +33,19 @@ shadow mode, and the W1 application are **not** implemented yet. See
 
 ## Commands
 
+The full local and CI verification gate is one command:
+
+```bash
+./scripts/verify.sh
+```
+
+It resolves dependencies, builds, runs the full test suite, lints, checks
+`VaaniCore` for forbidden framework imports, runs the release smoke
+benchmark, and scans for transcript/audio/private-corpus leakage. It exits
+non-zero on any failure.
+
+Focused developer commands, run individually while iterating:
+
 ```bash
 swift build
 swift test --parallel
@@ -45,6 +58,7 @@ swift format lint --recursive --strict Sources Tests Package.swift
 ```
 
 `vaani-bench run` exits `0` on success, `2` if `--baseline` detects a
-regression, `64` for invalid input, and `70` for an internal failure. See
-[`docs/initial-build.md`](docs/initial-build.md) for the full developer
-handoff, including exact verification commands and their results.
+regression, `64` for invalid input (including an incompatible baseline), and
+`70` for an internal failure. See [`docs/initial-build.md`](docs/initial-build.md)
+for the full developer handoff, including exact verification commands and
+their results.
