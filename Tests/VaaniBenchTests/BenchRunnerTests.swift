@@ -32,7 +32,7 @@ import VaaniPacks
         expectedRoute: Route,
         subset: String
     ) throws -> ReplayUtterance {
-        ReplayUtterance(
+        try ReplayUtterance(
             id: id,
             observations: [
                 try EvidenceObservation(
@@ -332,6 +332,17 @@ import VaaniPacks
         let reportText = String(data: try report.renderJSON(), encoding: .utf8) ?? ""
         #expect(!reportText.contains("Pramukh Swami Maharaj gave a talk on Vachanamrut"))
         #expect(!reportText.contains("pramukh swami maharaj"))
+    }
+
+    @Test func rejectsManifestFilesLargerThanSizeLimit() throws {
+        let tempURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vaanicore-oversized-manifest-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: tempURL) }
+        let oversized = Data(repeating: 0x20, count: 64 * 1024 * 1024 + 1)
+        try oversized.write(to: tempURL)
+        #expect(throws: (any Error).self) {
+            _ = try BenchManifestLoader.load(fromPath: tempURL.path)
+        }
     }
 
     @Test func smokeFixturePassesCheckedInBaselineWithNoRegressions() throws {

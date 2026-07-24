@@ -29,7 +29,7 @@ import VaaniCore
     }
 
     private func makeUtterance(id: String, candidateIDs: [String]) throws -> ReplayUtterance {
-        ReplayUtterance(
+        try ReplayUtterance(
             id: id,
             observations: [try makeObservation()],
             candidates: try candidateIDs.map { try makeCandidate(id: $0) },
@@ -41,7 +41,7 @@ import VaaniCore
 
     @Test func successfulLookupReturnsCandidates() async throws {
         let utterance = try makeUtterance(id: "utt-1", candidateIDs: ["utt-1-c1", "utt-1-c2"])
-        let manifest = ReplayManifest(schemaVersion: 1, utterances: [utterance])
+        let manifest = try ReplayManifest(schemaVersion: 1, utterances: [utterance])
         let recognizer = try ReplayRecognizer(manifest: manifest)
         let candidates = try await recognizer.candidates(for: "utt-1")
         #expect(candidates.count == 2)
@@ -49,7 +49,7 @@ import VaaniCore
 
     @Test func candidateOrderIsStableAcrossRepeatedLookups() async throws {
         let utterance = try makeUtterance(id: "utt-1", candidateIDs: ["utt-1-c1", "utt-1-c2", "utt-1-c3"])
-        let manifest = ReplayManifest(schemaVersion: 1, utterances: [utterance])
+        let manifest = try ReplayManifest(schemaVersion: 1, utterances: [utterance])
         let recognizer = try ReplayRecognizer(manifest: manifest)
         let first = try await recognizer.candidates(for: "utt-1")
         let second = try await recognizer.candidates(for: "utt-1")
@@ -57,18 +57,17 @@ import VaaniCore
         #expect(first.map(\.id) == second.map(\.id))
     }
 
-    @Test func duplicateUtteranceIDIsRejectedAtInit() throws {
+    @Test func duplicateUtteranceIDIsRejectedAtManifestConstruction() throws {
         let first = try makeUtterance(id: "dup", candidateIDs: ["c1"])
         let second = try makeUtterance(id: "dup", candidateIDs: ["c2"])
-        let manifest = ReplayManifest(schemaVersion: 1, utterances: [first, second])
         #expect(throws: VaaniAdapterError.duplicateUtteranceID("dup")) {
-            try ReplayRecognizer(manifest: manifest)
+            _ = try ReplayManifest(schemaVersion: 1, utterances: [first, second])
         }
     }
 
     @Test func unknownUtteranceIDThrows() async throws {
         let utterance = try makeUtterance(id: "utt-1", candidateIDs: ["c1"])
-        let manifest = ReplayManifest(schemaVersion: 1, utterances: [utterance])
+        let manifest = try ReplayManifest(schemaVersion: 1, utterances: [utterance])
         let recognizer = try ReplayRecognizer(manifest: manifest)
         await #expect(throws: VaaniAdapterError.unknownUtteranceID("missing")) {
             try await recognizer.candidates(for: "missing")
@@ -79,7 +78,7 @@ import VaaniCore
         let utterances = try (0..<10).map { index in
             try makeUtterance(id: "utt-\(index)", candidateIDs: ["utt-\(index)-c1"])
         }
-        let manifest = ReplayManifest(schemaVersion: 1, utterances: utterances)
+        let manifest = try ReplayManifest(schemaVersion: 1, utterances: utterances)
         let recognizer = try ReplayRecognizer(manifest: manifest)
 
         try await withThrowingTaskGroup(of: (Int, [RecognitionCandidate]).self) { group in
@@ -92,6 +91,168 @@ import VaaniCore
             for try await (index, candidates) in group {
                 #expect(candidates.map(\.id) == ["utt-\(index)-c1"])
             }
+        }
+    }
+
+    // MARK: - ReplayManifest construction validation
+
+    @Test func rejectsUnsupportedSchemaVersion() throws {
+        let utterance = try makeUtterance(id: "utt-1", candidateIDs: ["c1"])
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayManifest(schemaVersion: 2, utterances: [utterance])
+        }
+    }
+
+    @Test func rejectsEmptyUtterances() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayManifest(schemaVersion: 1, utterances: [])
+        }
+    }
+
+    // MARK: - ReplayUtterance construction validation
+
+    @Test func rejectsEmptyUtteranceID() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayUtterance(
+                id: "",
+                observations: [try makeObservation()],
+                candidates: [try makeCandidate(id: "c1")],
+                expectedText: "hello",
+                expectedRoute: .englishStreaming,
+                subset: "test"
+            )
+        }
+    }
+
+    @Test func rejectsEmptySubset() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayUtterance(
+                id: "utt-1",
+                observations: [try makeObservation()],
+                candidates: [try makeCandidate(id: "c1")],
+                expectedText: "hello",
+                expectedRoute: .englishStreaming,
+                subset: ""
+            )
+        }
+    }
+
+    @Test func rejectsEmptyObservations() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayUtterance(
+                id: "utt-1",
+                observations: [],
+                candidates: [try makeCandidate(id: "c1")],
+                expectedText: "hello",
+                expectedRoute: .englishStreaming,
+                subset: "test"
+            )
+        }
+    }
+
+    @Test func rejectsEmptyCandidates() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try ReplayUtterance(
+                id: "utt-1",
+                observations: [try makeObservation()],
+                candidates: [],
+                expectedText: "hello",
+                expectedRoute: .englishStreaming,
+                subset: "test"
+            )
+        }
+    }
+
+    @Test func allowsEmptyExpectedText() throws {
+        // Silence/empty-recognition evaluation may be legitimate later.
+        let utterance = try ReplayUtterance(
+            id: "utt-1",
+            observations: [try makeObservation()],
+            candidates: [try makeCandidate(id: "c1")],
+            expectedText: "",
+            expectedRoute: .englishStreaming,
+            subset: "test"
+        )
+        #expect(utterance.expectedText.isEmpty)
+    }
+
+    // MARK: - JSON decoding cannot bypass construction validation
+
+    private func validUtteranceJSON(id: String) -> String {
+        """
+        {
+          "id": "\(id)",
+          "subset": "test",
+          "observations": [
+            {
+              "languages": { "en": 1.0 },
+              "domains": {},
+              "source": "recognizer",
+              "weight": 1.0,
+              "timestampMilliseconds": 0
+            }
+          ],
+          "candidates": [
+            {
+              "id": "\(id)-c1",
+              "text": "hi",
+              "confidence": 0.9,
+              "detectedLanguages": { "en": 1.0 },
+              "segments": [],
+              "model": { "provider": "replay", "name": "test", "version": "1" },
+              "latencyMilliseconds": 10
+            }
+          ],
+          "expectedText": "hi",
+          "expectedRoute": "englishStreaming"
+        }
+        """
+    }
+
+    @Test func jsonDecodingRejectsUnsupportedSchemaVersion() {
+        let json = Data(
+            """
+            { "schemaVersion": 2, "utterances": [\(validUtteranceJSON(id: "utt-1"))] }
+            """.utf8
+        )
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(ReplayManifest.self, from: json)
+        }
+    }
+
+    @Test func jsonDecodingRejectsEmptyUtterances() {
+        let json = Data(
+            """
+            { "schemaVersion": 1, "utterances": [] }
+            """.utf8
+        )
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(ReplayManifest.self, from: json)
+        }
+    }
+
+    @Test func jsonDecodingRejectsDuplicateUtteranceIDs() {
+        let json = Data(
+            """
+            {
+              "schemaVersion": 1,
+              "utterances": [\(validUtteranceJSON(id: "dup")), \(validUtteranceJSON(id: "dup"))]
+            }
+            """.utf8
+        )
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(ReplayManifest.self, from: json)
+        }
+    }
+
+    @Test func jsonDecodingRejectsEmptyUtteranceID() {
+        let json = Data(
+            """
+            { "schemaVersion": 1, "utterances": [\(validUtteranceJSON(id: ""))] }
+            """.utf8
+        )
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(ReplayManifest.self, from: json)
         }
     }
 
