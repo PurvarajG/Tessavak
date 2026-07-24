@@ -49,7 +49,12 @@ public struct VaaniPipeline: Sendable {
     private let scorer: CandidateScorer
     private let correctionEngine: CorrectionEngine
     private let renderer: OutputRenderer
-    private let protectedTerms: Set<String>
+
+    /// Canonical, protected terminology terms known to this pipeline's
+    /// pack. Exposed so external evaluation tooling (e.g. VaaniBench) can
+    /// compute protected-term and false-domain-correction metrics without
+    /// re-deriving the terminology pack itself.
+    public let protectedTerms: Set<String>
 
     public init(
         accumulatorConfiguration: EvidenceAccumulatorConfiguration,

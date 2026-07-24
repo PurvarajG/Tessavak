@@ -1,0 +1,63 @@
+{
+  "manifestSHA256" : "0720a7b3b078187678db05646106b8e91f6587a71b270741642e69f1bca44da6",
+  "metrics" : {
+    "dualDecodeRate" : 0.2,
+    "exactMatchRate" : 1,
+    "falseDomainCorrectionRate" : 0,
+    "medianFinalLatencyMilliseconds" : 90,
+    "protectedTermExactMatchRate" : 1,
+    "routeAccuracy" : 1,
+    "utteranceCount" : 5
+  },
+  "regressions" : [
+
+  ],
+  "schemaVersion" : 1,
+  "subsetMetrics" : {
+    "baps-terminology" : {
+      "dualDecodeRate" : 0,
+      "exactMatchRate" : 1,
+      "falseDomainCorrectionRate" : 0,
+      "medianFinalLatencyMilliseconds" : 180,
+      "protectedTermExactMatchRate" : 1,
+      "routeAccuracy" : 1,
+      "utteranceCount" : 1
+    },
+    "clean-english" : {
+      "dualDecodeRate" : 0,
+      "exactMatchRate" : 1,
+      "falseDomainCorrectionRate" : 0,
+      "medianFinalLatencyMilliseconds" : 90,
+      "protectedTermExactMatchRate" : 0,
+      "routeAccuracy" : 1,
+      "utteranceCount" : 1
+    },
+    "code-switch" : {
+      "dualDecodeRate" : 1,
+      "exactMatchRate" : 1,
+      "falseDomainCorrectionRate" : 0,
+      "medianFinalLatencyMilliseconds" : 90,
+      "protectedTermExactMatchRate" : 0,
+      "routeAccuracy" : 1,
+      "utteranceCount" : 1
+    },
+    "collision-protection" : {
+      "dualDecodeRate" : 0,
+      "exactMatchRate" : 1,
+      "falseDomainCorrectionRate" : 0,
+      "medianFinalLatencyMilliseconds" : 85,
+      "protectedTermExactMatchRate" : 0,
+      "routeAccuracy" : 1,
+      "utteranceCount" : 1
+    },
+    "gujarati-script" : {
+      "dualDecodeRate" : 0,
+      "exactMatchRate" : 1,
+      "falseDomainCorrectionRate" : 0,
+      "medianFinalLatencyMilliseconds" : 150,
+      "protectedTermExactMatchRate" : 0,
+      "routeAccuracy" : 1,
+      "utteranceCount" : 1
+    }
+  }
+}
