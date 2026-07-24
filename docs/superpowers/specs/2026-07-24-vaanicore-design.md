@@ -1,7 +1,9 @@
 # VaaniCore Design
 
 Date: 2026-07-24
-Status: Approved direction, implementation pending
+Status: Approved direction; deterministic replay slice implemented and
+hardened (Phase 1 audit remediation complete); live audio, recognizer
+adapters, and consumer integration pending
 
 ## 1. Purpose
 

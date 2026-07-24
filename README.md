@@ -23,8 +23,12 @@ JSON replay fixture
 
 Real audio capture, voice activity detection, live recogniser adapters
 (FluidAudio, whisper.cpp), local-LLM correction, model downloading, Wffl
-shadow mode, and the W1 application are **not** implemented yet. See
-`docs/initial-build.md` for the full boundary and deferred work.
+shadow mode, and the W1 application are **not** implemented yet. This slice
+has been hardened per a Phase 1 audit remediation pass — manifest/report
+schema validation, corpus-bound benchmark baselines, terminating output
+rendering, and a single reproducible verification gate. See
+`docs/initial-build.md` for the full boundary, enforced contracts, and
+deferred work.
 
 ## Prerequisites
 

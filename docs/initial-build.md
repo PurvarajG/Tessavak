@@ -1,8 +1,8 @@
 # VaaniCore Initial Build — Developer Handoff
 
-Status: Checkpoint C complete. This document records what the initial
-vertical slice implements, how it was verified, and what is deliberately
-deferred to the next plan.
+Status: Checkpoint C complete; Phase 1 audit remediation complete. This
+document records what the initial vertical slice implements, how it was
+verified, and what is deliberately deferred to the next plan.
 
 ## Environment used for verification
 
@@ -82,6 +82,45 @@ git ls-files | rg '\.(wav|m4a|mp3)$|^Reports/|Corpus/Private/'
 # Exit 1 (no matches) — no private audio or generated report files tracked.
 ```
 
+## Phase 1 audit remediation — enforced contracts
+
+The initial vertical slice above has been hardened against the P0 findings
+of an audit pass (see
+`docs/superpowers/plans/2026-07-24-vaanicore-audit-remediation.md`). The
+following contracts are now enforced, not merely documented:
+
+- **Manifest and report schema validation.** `ReplayManifest`,
+  `ReplayUtterance`, `BenchReport`, and `BenchMetrics` all validate at both
+  direct construction and JSON decoding — schema version, non-empty
+  required fields, duplicate IDs, metric ranges, finiteness, and hash format
+  cannot be bypassed by decoding crafted JSON.
+- **Corpus-bound baseline checks.** `BenchRunner.run` computes a canonical
+  manifest hash (utterances sorted by ID, so reordering equivalent entries
+  never changes the hash) and rejects an incompatible baseline —
+  mismatched schema version, manifest hash, utterance count, or subset
+  membership — with a typed `BaselineCompatibilityError` before any metric
+  is compared. A regression in one subset is gated independently
+  (`subset.<name>.<metric>`) and can never be hidden by an unchanged or
+  improved overall average.
+- **Terminating output replacement.** `OutputRenderer`'s Roman-Gujarati
+  rendering only ever scans the immutable source text; it collects
+  non-overlapping replacement ranges and applies them once in descending
+  order, so a replacement that contains its own search phrase cannot cause
+  unbounded rescanning.
+- **One full verification command.** `./scripts/verify.sh` is the single
+  local/CI gate: dependency resolution, build, full test suite, strict
+  lint, a forbidden-framework-import scan, the release smoke benchmark, and
+  a transcript/audio/private-corpus leakage scan. CI runs exactly this
+  script under least-privilege (`contents: read`) permissions with pinned
+  action revisions.
+- **Latency is synthetic, not measured.** Every candidate's
+  `latencyMilliseconds` in the replay fixtures is a hand-authored constant
+  used to exercise routing/scoring logic deterministically. It is not a
+  measurement of real recognizer latency, first-partial time, or real-time
+  factor. Those require the live audio/recognizer work in Phase 2 and the
+  reference-hardware benchmarking in Phase 3; no latency or real-time-factor
+  claim from this fixture may be quoted as a performance result.
+
 ## Fixture limitations — read before quoting any metric
 
 `Fixtures/replay/smoke.json` contains **five synthetic, hand-authored
@@ -130,6 +169,13 @@ corpus with real or realistic audio, which does not exist yet.
 
 ## Next milestone
 
-Per the canonical plan: add audio/VAD and real recogniser adapter contract
-tests next, beginning by capturing actual Wffl/W1 baseline hardware and
-corpus metadata — then proceed to Wffl shadow mode.
+Phase 1 (this hardening pass) is complete; Phase 2 (live orchestration
+contracts — core-owned audio/utterance types, async `Detector`/`Recognizer`
+protocols, `RoutingPlan`, `LivePipelineCoordinator`, cancellation/timeout/
+degraded-fallback semantics) and Phase 3 (terminology scale, corpus/
+benchmark maturity, release operations) are separate follow-on plans gated
+on this plan's completion — see
+`docs/superpowers/plans/2026-07-24-vaanicore-audit-remediation.md`. Per the
+canonical design-spec delivery sequence: add audio/VAD and real recogniser
+adapter contract tests next, beginning by capturing actual Wffl/W1 baseline
+hardware and corpus metadata — then proceed to Wffl shadow mode.
