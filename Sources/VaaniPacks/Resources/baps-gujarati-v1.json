@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "baps-gujarati",
+  "version": "1",
+  "license": "Project-authored; Apache-2.0",
+  "provenance": "Synthetic seed terminology list authored for the initial VaaniCore build. This is a deliberately small, reviewable starting set, not yet the curated production BAPS/Gujarati terminology corpus. Aliases are limited to obvious casing or punctuation variants; no observed mishearings have been recorded yet.",
+  "entries": [
+    {
+      "canonical": "BAPS",
+      "aliases": ["baps"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": {},
+      "collisionRisk": 0.1
+    },
+    {
+      "canonical": "Bhagwan Swaminarayan",
+      "aliases": ["bhagwan swaminarayan"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": { "gujaratiScript": "ભગવાન સ્વામિનારાયણ" },
+      "collisionRisk": 0.05
+    },
+    {
+      "canonical": "Akshar-Purushottam",
+      "aliases": ["akshar-purushottam", "akshar purushottam"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": { "gujaratiScript": "અક્ષર-પુરુષોત્તમ" },
+      "collisionRisk": 0.05
+    },
+    {
+      "canonical": "Pramukh Swami Maharaj",
+      "aliases": ["pramukh swami maharaj"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": { "gujaratiScript": "પ્રમુખ સ્વામી મહારાજ" },
+      "collisionRisk": 0.05
+    },
+    {
+      "canonical": "Mahant Swami Maharaj",
+      "aliases": ["mahant swami maharaj"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": { "gujaratiScript": "મહંત સ્વામી મહારાજ" },
+      "collisionRisk": 0.05
+    },
+    {
+      "canonical": "Vachanamrut",
+      "aliases": ["vachanamrut"],
+      "language": "gu",
+      "script": "Latin",
+      "protected": true,
+      "outputForms": { "gujaratiScript": "વચનામૃત" },
+      "collisionRisk": 0.05
+    }
+  ]
+}
