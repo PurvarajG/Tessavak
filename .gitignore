@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+.DS_Store
+DerivedData/
+*.xcresult
+
+# Private audio corpus
+*.wav
+*.m4a
+*.mp3
+Corpus/Private/
+
+# Generated benchmark output
+Reports/
