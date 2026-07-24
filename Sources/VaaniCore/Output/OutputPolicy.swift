@@ -90,21 +90,58 @@ public struct OutputRenderer: Sendable {
     /// Gujarati conjuncts and matras make boundary detection unreliable at
     /// this stage, so this is safe degradation, not a Unicode syllable
     /// walker. Longest phrase first avoids partial overlap between entries.
+    ///
+    /// Matching only ever scans the immutable original `text`; replacements
+    /// are collected as ranges and applied once, in descending location
+    /// order, so a replacement that contains its own search phrase (e.g.
+    /// "અક્ષર" -> "અક્ષર-roman") cannot be found again and cause unbounded
+    /// rescanning.
     private func renderBapsRoman(_ text: String) -> String {
-        var rules: [(phrase: String, replacement: String)] = []
+        struct Rule {
+            let phrase: String
+            let replacement: String
+        }
+
+        var rules: [Rule] = []
         for entry in pack.entries {
             guard let gujarati = entry.outputForms["gujaratiScript"],
                 let bapsRoman = entry.outputForms["bapsRoman"]
             else { continue }
-            rules.append((gujarati, bapsRoman))
+            rules.append(Rule(phrase: gujarati, replacement: bapsRoman))
         }
         rules.sort { $0.phrase.count > $1.phrase.count }
 
-        var result = text
+        struct Match {
+            let range: Range<String.Index>
+            let replacement: String
+        }
+
+        var matches: [Match] = []
         for rule in rules {
-            while let range = result.range(of: rule.phrase) {
-                result.replaceSubrange(range, with: rule.replacement)
+            var searchStart = text.startIndex
+            while searchStart < text.endIndex,
+                let range = text.range(of: rule.phrase, range: searchStart..<text.endIndex)
+            {
+                matches.append(Match(range: range, replacement: rule.replacement))
+                searchStart = range.upperBound
             }
+        }
+        matches.sort { lhs, rhs in
+            let lhsLength = text.distance(from: lhs.range.lowerBound, to: lhs.range.upperBound)
+            let rhsLength = text.distance(from: rhs.range.lowerBound, to: rhs.range.upperBound)
+            if lhsLength != rhsLength { return lhsLength > rhsLength }
+            return lhs.range.lowerBound < rhs.range.lowerBound
+        }
+
+        var accepted: [Match] = []
+        for match in matches where !accepted.contains(where: { $0.range.overlaps(match.range) }) {
+            accepted.append(match)
+        }
+        accepted.sort { $0.range.lowerBound > $1.range.lowerBound }
+
+        var result = text
+        for match in accepted {
+            result.replaceSubrange(match.range, with: match.replacement)
         }
         return result
     }

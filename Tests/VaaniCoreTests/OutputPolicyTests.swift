@@ -105,4 +105,94 @@ import Testing
         let twice = try renderer.render(once, policy: .bapsRoman)
         #expect(twice == once)
     }
+
+    @Test func emptyGujaratiScriptOutputFormThrows() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try TerminologyEntry(
+                canonical: "Test",
+                aliases: [],
+                language: .gujarati,
+                script: "Latin",
+                protected: true,
+                outputForms: ["gujaratiScript": "", "bapsRoman": "roman"],
+                collisionRisk: 0
+            )
+        }
+    }
+
+    @Test func emptyBapsRomanOutputFormThrows() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try TerminologyEntry(
+                canonical: "Test",
+                aliases: [],
+                language: .gujarati,
+                script: "Latin",
+                protected: true,
+                outputForms: ["gujaratiScript": "અક્ષર", "bapsRoman": ""],
+                collisionRisk: 0
+            )
+        }
+    }
+
+    @Test func unsupportedOutputFormKeyThrows() {
+        #expect(throws: VaaniCoreError.self) {
+            _ = try TerminologyEntry(
+                canonical: "Test",
+                aliases: [],
+                language: .gujarati,
+                script: "Latin",
+                protected: true,
+                outputForms: ["englishTranslation": "test"],
+                collisionRisk: 0
+            )
+        }
+    }
+
+    @Test func selfContainingBapsRomanReplacementTerminates() throws {
+        let pack = try TerminologyPack(
+            schemaVersion: 1,
+            id: "test-pack",
+            version: "1",
+            license: "Project-authored; Apache-2.0",
+            provenance: "Synthetic fixture for self-containing replacement test.",
+            entries: [
+                try TerminologyEntry(
+                    canonical: "Akshar",
+                    aliases: [],
+                    language: .gujarati,
+                    script: "Latin",
+                    protected: true,
+                    outputForms: ["gujaratiScript": "અક્ષર", "bapsRoman": "અક્ષર-roman"],
+                    collisionRisk: 0.05
+                )
+            ]
+        )
+        let renderer = OutputRenderer(pack: pack)
+        let rendered = try renderer.render("અક્ષર અક્ષર", policy: .bapsRoman)
+        #expect(rendered == "અક્ષર-roman અક્ષર-roman")
+    }
+
+    @Test func identicalSourceAndReplacementIsStableSinglePass() throws {
+        let pack = try TerminologyPack(
+            schemaVersion: 1,
+            id: "test-pack",
+            version: "1",
+            license: "Project-authored; Apache-2.0",
+            provenance: "Synthetic fixture for identity replacement test.",
+            entries: [
+                try TerminologyEntry(
+                    canonical: "Same",
+                    aliases: [],
+                    language: .gujarati,
+                    script: "Latin",
+                    protected: true,
+                    outputForms: ["gujaratiScript": "same", "bapsRoman": "same"],
+                    collisionRisk: 0.05
+                )
+            ]
+        )
+        let renderer = OutputRenderer(pack: pack)
+        let rendered = try renderer.render("same text", policy: .bapsRoman)
+        #expect(rendered == "same text")
+    }
 }

@@ -30,6 +30,19 @@ public struct TerminologyEntry: Codable, Equatable, Sendable {
         for alias in aliases where alias.isEmpty {
             throw VaaniCoreError.invalidConfiguration("terminology entry \(canonical) has an empty alias")
         }
+        let supportedOutputForms: Set<String> = ["gujaratiScript", "bapsRoman"]
+        for (key, value) in outputForms {
+            guard supportedOutputForms.contains(key) else {
+                throw VaaniCoreError.invalidConfiguration(
+                    "terminology entry \(canonical) has unsupported output form '\(key)'"
+                )
+            }
+            guard !value.isEmpty else {
+                throw VaaniCoreError.invalidConfiguration(
+                    "terminology entry \(canonical) has empty output form '\(key)'"
+                )
+            }
+        }
         self.canonical = canonical
         self.aliases = aliases
         self.language = language
