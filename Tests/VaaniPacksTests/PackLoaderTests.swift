@@ -142,6 +142,68 @@ import VaaniCore
         }
     }
 
+    @Test func rejectsCanonicalAliasOwnershipCollision() throws {
+        let first = try TerminologyEntry(
+            canonical: "Alpha",
+            aliases: ["Beta"],
+            language: .english,
+            script: "Latin",
+            protected: true,
+            outputForms: [:],
+            collisionRisk: 0
+        )
+        let second = try TerminologyEntry(
+            canonical: "Beta",
+            aliases: [],
+            language: .english,
+            script: "Latin",
+            protected: true,
+            outputForms: [:],
+            collisionRisk: 0
+        )
+        #expect(throws: (any Error).self) {
+            _ = try TerminologyPack(
+                schemaVersion: 1,
+                id: "x",
+                version: "1",
+                license: "Apache-2.0",
+                provenance: "test",
+                entries: [first, second]
+            )
+        }
+    }
+
+    @Test func rejectsCanonicalAliasOwnershipCollisionAcrossCasing() throws {
+        let first = try TerminologyEntry(
+            canonical: "Alpha",
+            aliases: ["BETA"],
+            language: .english,
+            script: "Latin",
+            protected: true,
+            outputForms: [:],
+            collisionRisk: 0
+        )
+        let second = try TerminologyEntry(
+            canonical: "Beta",
+            aliases: [],
+            language: .english,
+            script: "Latin",
+            protected: true,
+            outputForms: [:],
+            collisionRisk: 0
+        )
+        #expect(throws: (any Error).self) {
+            _ = try TerminologyPack(
+                schemaVersion: 1,
+                id: "x",
+                version: "1",
+                license: "Apache-2.0",
+                provenance: "test",
+                entries: [first, second]
+            )
+        }
+    }
+
     @Test func loadRejectsEmptyCanonical() {
         let json = Data(
             """

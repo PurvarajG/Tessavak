@@ -106,15 +106,6 @@ public struct TerminologyPack: Codable, Equatable, Sendable {
             throw VaaniCoreError.invalidConfiguration("terminology pack provenance must not be empty")
         }
 
-        var seenCanonicals: Set<String> = []
-        for entry in entries {
-            let folded = entry.canonical.folding(options: .caseInsensitive, locale: nil)
-            guard !seenCanonicals.contains(folded) else {
-                throw VaaniCoreError.invalidConfiguration("duplicate terminology canonical: \(entry.canonical)")
-            }
-            seenCanonicals.insert(folded)
-        }
-
         for entry in entries {
             var seenAliases: Set<String> = []
             for alias in entry.aliases {
@@ -128,16 +119,17 @@ public struct TerminologyPack: Codable, Equatable, Sendable {
             }
         }
 
-        var aliasOwners: [String: String] = [:]
-        for entry in entries {
-            for alias in entry.aliases {
-                let folded = alias.folding(options: .caseInsensitive, locale: nil)
-                if let existingOwner = aliasOwners[folded], existingOwner != entry.canonical {
+        var phraseOwners: [String: Int] = [:]
+        for (index, entry) in entries.enumerated() {
+            let phrases = [entry.canonical] + entry.aliases
+            for phrase in phrases {
+                let folded = phrase.folding(options: .caseInsensitive, locale: nil)
+                if let existingIndex = phraseOwners[folded], existingIndex != index {
                     throw VaaniCoreError.invalidConfiguration(
-                        "alias '\(alias)' is ambiguous between '\(existingOwner)' and '\(entry.canonical)'"
+                        "terminology phrase '\(phrase)' is ambiguous between '\(entries[existingIndex].canonical)' and '\(entry.canonical)'"
                     )
                 }
-                aliasOwners[folded] = entry.canonical
+                phraseOwners[folded] = index
             }
         }
 
