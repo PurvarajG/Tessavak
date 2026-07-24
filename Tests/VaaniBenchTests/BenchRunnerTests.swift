@@ -75,10 +75,14 @@ import VaaniPacks
 
     @Test func exactMatchRateCountsIdenticalText() throws {
         let entries = [
-            (try utterance(id: "u1", expectedText: "hello", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "hello", route: .englishStreaming, latency: 10)),
-            (try utterance(id: "u2", expectedText: "world", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "nope", route: .englishStreaming, latency: 10)),
+            (
+                try utterance(id: "u1", expectedText: "hello", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "hello", route: .englishStreaming, latency: 10)
+            ),
+            (
+                try utterance(id: "u2", expectedText: "world", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "nope", route: .englishStreaming, latency: 10)
+            ),
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(metrics.exactMatchRate == 0.5)
@@ -86,10 +90,14 @@ import VaaniPacks
 
     @Test func routeAccuracyCountsMatchingRoutes() throws {
         let entries = [
-            (try utterance(id: "u1", expectedText: "a", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "a", route: .englishStreaming, latency: 10)),
-            (try utterance(id: "u2", expectedText: "b", expectedRoute: .multilingual, subset: "s"),
-             try result(text: "b", route: .dual, latency: 10)),
+            (
+                try utterance(id: "u1", expectedText: "a", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "a", route: .englishStreaming, latency: 10)
+            ),
+            (
+                try utterance(id: "u2", expectedText: "b", expectedRoute: .multilingual, subset: "s"),
+                try result(text: "b", route: .dual, latency: 10)
+            ),
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(metrics.routeAccuracy == 0.5)
@@ -97,12 +105,18 @@ import VaaniPacks
 
     @Test func dualDecodeRateCountsDualRoutes() throws {
         let entries = [
-            (try utterance(id: "u1", expectedText: "a", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "a", route: .dual, latency: 10)),
-            (try utterance(id: "u2", expectedText: "b", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "b", route: .englishStreaming, latency: 10)),
-            (try utterance(id: "u3", expectedText: "c", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "c", route: .dual, latency: 10)),
+            (
+                try utterance(id: "u1", expectedText: "a", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "a", route: .dual, latency: 10)
+            ),
+            (
+                try utterance(id: "u2", expectedText: "b", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "b", route: .englishStreaming, latency: 10)
+            ),
+            (
+                try utterance(id: "u3", expectedText: "c", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "c", route: .dual, latency: 10)
+            ),
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: [])
         #expect(abs(metrics.dualDecodeRate - (2.0 / 3.0)) < 1e-9)
@@ -111,10 +125,14 @@ import VaaniPacks
     @Test func protectedTermExactMatchRateRequiresCaseExactPresence() throws {
         let protectedTerms: Set<String> = ["BAPS"]
         let entries = [
-            (try utterance(id: "u1", expectedText: "BAPS talk", expectedRoute: .multilingual, subset: "s"),
-             try result(text: "BAPS talk", route: .multilingual, latency: 10)),
-            (try utterance(id: "u2", expectedText: "BAPS event", expectedRoute: .multilingual, subset: "s"),
-             try result(text: "baps event", route: .multilingual, latency: 10)),
+            (
+                try utterance(id: "u1", expectedText: "BAPS talk", expectedRoute: .multilingual, subset: "s"),
+                try result(text: "BAPS talk", route: .multilingual, latency: 10)
+            ),
+            (
+                try utterance(id: "u2", expectedText: "BAPS event", expectedRoute: .multilingual, subset: "s"),
+                try result(text: "baps event", route: .multilingual, latency: 10)
+            ),
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         #expect(metrics.protectedTermExactMatchRate == 0.5)
@@ -122,8 +140,10 @@ import VaaniPacks
 
     @Test func protectedTermExactMatchRateIsZeroWhenNoUtteranceHasProtectedTerms() throws {
         let entries = [
-            (try utterance(id: "u1", expectedText: "hello", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "hello", route: .englishStreaming, latency: 10))
+            (
+                try utterance(id: "u1", expectedText: "hello", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "hello", route: .englishStreaming, latency: 10)
+            )
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: ["BAPS"])
         #expect(metrics.protectedTermExactMatchRate == 0)
@@ -133,10 +153,14 @@ import VaaniPacks
         let protectedTerms: Set<String> = ["BAPS"]
         let correction = AppliedCorrection(original: "x", replacement: "y", entryCanonical: "y", rule: "test")
         let entries = [
-            (try utterance(id: "u1", expectedText: "plain text", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "plain text", route: .englishStreaming, latency: 10, corrections: [correction])),
-            (try utterance(id: "u2", expectedText: "other text", expectedRoute: .englishStreaming, subset: "s"),
-             try result(text: "other text", route: .englishStreaming, latency: 10)),
+            (
+                try utterance(id: "u1", expectedText: "plain text", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "plain text", route: .englishStreaming, latency: 10, corrections: [correction])
+            ),
+            (
+                try utterance(id: "u2", expectedText: "other text", expectedRoute: .englishStreaming, subset: "s"),
+                try result(text: "other text", route: .englishStreaming, latency: 10)
+            ),
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         #expect(metrics.falseDomainCorrectionRate == 0.5)
@@ -146,8 +170,10 @@ import VaaniPacks
         let protectedTerms: Set<String> = ["BAPS"]
         let correction = AppliedCorrection(original: "x", replacement: "BAPS", entryCanonical: "BAPS", rule: "test")
         let entries = [
-            (try utterance(id: "u1", expectedText: "BAPS talk", expectedRoute: .multilingual, subset: "s"),
-             try result(text: "BAPS talk", route: .multilingual, latency: 10, corrections: [correction]))
+            (
+                try utterance(id: "u1", expectedText: "BAPS talk", expectedRoute: .multilingual, subset: "s"),
+                try result(text: "BAPS talk", route: .multilingual, latency: 10, corrections: [correction])
+            )
         ]
         let metrics = BenchRunner.computeMetrics(entries, protectedTerms: protectedTerms)
         // No plain-English-eligible utterances at all, so the rate must be 0, not NaN.

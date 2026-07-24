@@ -11,7 +11,7 @@ let package = Package(
         .executable(name: "vaani-bench", targets: ["VaaniBench"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0")
     ],
     targets: [
         .target(name: "VaaniCore"),

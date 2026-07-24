@@ -8,8 +8,7 @@ import Testing
         try ModelIdentity(provider: "replay", name: name, version: "1")
     }
 
-    private func snapshot(_ values: [LanguageTag: Double], activeDomains: Set<String> = []) throws -> EvidenceSnapshot
-    {
+    private func snapshot(_ values: [LanguageTag: Double], activeDomains: Set<String> = []) throws -> EvidenceSnapshot {
         try EvidenceSnapshot(
             languages: try LanguageDistribution(values: values),
             domains: [:],
