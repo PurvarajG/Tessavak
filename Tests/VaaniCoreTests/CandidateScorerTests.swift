@@ -102,6 +102,83 @@ import Testing
         }
     }
 
+    // MARK: - Absent confidence
+
+    @Test func absentConfidenceIsNotScoredAsZero() throws {
+        let scorer = try CandidateScorer(latencyBudgetMilliseconds: 500)
+        let evidence = try snapshot([.english: 0.9, .mixed: 0.05, .other: 0.05])
+
+        func candidate(id: String, confidence: Double?) throws -> RecognitionCandidate {
+            try RecognitionCandidate(
+                id: id,
+                text: "The weather is nice today",
+                confidence: confidence,
+                detectedLanguages: try LanguageDistribution(values: [.english: 0.95, .mixed: 0.05]),
+                segments: [],
+                model: try model("fastEnglish"),
+                latencyMilliseconds: 100
+            )
+        }
+
+        let absent = try scorer.select(
+            from: [try candidate(id: "c-absent", confidence: nil)],
+            evidence: evidence,
+            protectedTerms: []
+        ).scores[0]
+
+        #expect(absent.components[.acousticConfidence] == nil)
+
+        // Renormalisation makes the omission equivalent to reporting exactly
+        // the weighted mean of the components that ARE present — neither a
+        // penalty nor a bonus.
+        let weights = ScoringWeights.default.values
+        let presentWeight = absent.components.keys.reduce(0.0) { $0 + (weights[$1] ?? 0) }
+        let weightedSum = absent.components.reduce(0.0) { $0 + $1.value * (weights[$1.key] ?? 0) }
+        let equivalentConfidence = weightedSum / presentWeight
+
+        let reported = try scorer.select(
+            from: [try candidate(id: "c-reported", confidence: equivalentConfidence)],
+            evidence: evidence,
+            protectedTerms: []
+        ).scores[0]
+
+        #expect(abs(absent.total - reported.total) < 0.000_000_1)
+
+        // And zero confidence must score strictly worse than absent.
+        let zero = try scorer.select(
+            from: [try candidate(id: "c-zero", confidence: 0)],
+            evidence: evidence,
+            protectedTerms: []
+        ).scores[0]
+        #expect(zero.total < absent.total)
+    }
+
+    @Test func presentConfidenceScoresIdenticallyToTheUnnormalisedFormula() throws {
+        // Guards the renormalisation factor being exactly 1.0 whenever every
+        // component is present, which is what keeps the fixtures stable.
+        let scorer = try CandidateScorer(latencyBudgetMilliseconds: 500)
+        let evidence = try snapshot([.english: 0.9, .mixed: 0.05, .other: 0.05])
+        let score = try scorer.select(
+            from: [
+                try RecognitionCandidate(
+                    id: "c",
+                    text: "The weather is nice today",
+                    confidence: 0.9,
+                    detectedLanguages: try LanguageDistribution(values: [.english: 0.95, .mixed: 0.05]),
+                    segments: [],
+                    model: try model("fastEnglish"),
+                    latencyMilliseconds: 100
+                )
+            ],
+            evidence: evidence,
+            protectedTerms: []
+        ).scores[0]
+
+        let weights = ScoringWeights.default.values
+        let expected = score.components.reduce(0.0) { $0 + $1.value * (weights[$1.key] ?? 0) }
+        #expect(abs(score.total - expected) < 1e-12)
+    }
+
     // MARK: - ScoringWeights validation
 
     @Test func scoringWeightsRejectsNaN() {

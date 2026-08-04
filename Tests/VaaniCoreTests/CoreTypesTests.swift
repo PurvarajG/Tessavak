@@ -51,6 +51,42 @@ import Testing
         }
     }
 
+    // MARK: - RecognitionCandidate confidence
+
+    @Test func absentCandidateConfidenceRoundTripsWithTheKeyOmitted() throws {
+        let candidate = try RecognitionCandidate(
+            id: "c1",
+            text: "hello",
+            confidence: nil,
+            detectedLanguages: try LanguageDistribution(values: [.english: 1.0]),
+            segments: [],
+            model: try ModelIdentity(provider: "whisper.cpp", name: "tiny", version: "1"),
+            latencyMilliseconds: 0
+        )
+
+        let data = try JSONEncoder().encode(candidate)
+        let json = try #require(String(data: data, encoding: .utf8))
+        #expect(!json.contains("confidence"))
+
+        let decoded = try JSONDecoder().decode(RecognitionCandidate.self, from: data)
+        #expect(decoded.confidence == nil)
+        #expect(decoded == candidate)
+    }
+
+    @Test func candidateConfidenceStillRejectsOutOfRangeValues() {
+        #expect(throws: (any Error).self) {
+            try RecognitionCandidate(
+                id: "c1",
+                text: "hello",
+                confidence: 1.5,
+                detectedLanguages: try LanguageDistribution(values: [.english: 1.0]),
+                segments: [],
+                model: try ModelIdentity(provider: "mock", name: "m", version: "1"),
+                latencyMilliseconds: 0
+            )
+        }
+    }
+
     // MARK: - DiagnosticEvent
 
     @Test func diagnosticsRejectSensitiveAttributeKeys() {

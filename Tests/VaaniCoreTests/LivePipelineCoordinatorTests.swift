@@ -21,14 +21,14 @@ private struct LiveMockRecognizer: StreamingRecognizer {
     let identity: ModelIdentity
     let behavior: Behavior
     let text: String
-    let confidence: Double
+    let confidence: Double?
     let languages: [LanguageTag: Double]
 
     init(
         name: String,
         behavior: Behavior = .final,
         text: String = "mock transcript",
-        confidence: Double = 0.9,
+        confidence: Double? = 0.9,
         languages: [LanguageTag: Double] = [.english: 1.0]
     ) throws {
         self.identity = try ModelIdentity(provider: "mock", name: name, version: "1")
@@ -303,6 +303,28 @@ private struct SignalledScheduler: DeadlineScheduler {
         #expect(codes(result).contains(.secondarySkipped))
         #expect(result.selection.scores.count == 1)
         #expect(result.text == "confident text")
+    }
+
+    @Test func absentPrimaryConfidenceDoesNotTriggerSecondary() async throws {
+        // A recogniser that reports no confidence (whisper.cpp exposes none)
+        // must not be treated as reporting a low one.
+        let coordinator = try makeCoordinator(
+            detectorLanguages: [.english: 0.55, .mixed: 0.4, .other: 0.05],
+            recognizers: [
+                .englishStreaming: try LiveMockRecognizer(
+                    name: "en", text: "no confidence text", confidence: nil
+                ),
+                .multilingual: try LiveMockRecognizer(name: "ml", text: "second opinion"),
+            ]
+        )
+        let result = try await coordinator.process(
+            events: try utterance(), sessionPolicy: .interactive, outputPolicy: .preserveMixed
+        )
+
+        #expect(result.route.route == .dual)
+        #expect(codes(result).contains(.secondarySkipped))
+        #expect(result.selection.scores.count == 1)
+        #expect(result.text == "no confidence text")
     }
 
     @Test func evaluationPolicyRunsBothRecognizers() async throws {

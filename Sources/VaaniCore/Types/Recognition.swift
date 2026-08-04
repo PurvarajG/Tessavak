@@ -78,7 +78,10 @@ public struct ModelIdentity: Codable, Equatable, Hashable, Sendable {
 public struct RecognitionCandidate: Codable, Equatable, Sendable {
     public let id: String
     public let text: String
-    public let confidence: Double
+    /// `nil` when the recogniser exposes no confidence signal at all — which
+    /// is not the same as reporting low confidence. Consumers must treat the
+    /// absence as "unknown", never as zero.
+    public let confidence: Double?
     public let detectedLanguages: LanguageDistribution
     public let segments: [RecognitionSegment]
     public let model: ModelIdentity
@@ -87,7 +90,7 @@ public struct RecognitionCandidate: Codable, Equatable, Sendable {
     public init(
         id: String,
         text: String,
-        confidence: Double,
+        confidence: Double?,
         detectedLanguages: LanguageDistribution,
         segments: [RecognitionSegment],
         model: ModelIdentity,
@@ -96,8 +99,10 @@ public struct RecognitionCandidate: Codable, Equatable, Sendable {
         guard !id.isEmpty else {
             throw VaaniCoreError.invalidConfiguration("candidate id must not be empty")
         }
-        guard confidence >= 0, confidence <= 1 else {
-            throw VaaniCoreError.invalidProbability(field: "candidate.confidence", value: confidence)
+        if let confidence {
+            guard confidence >= 0, confidence <= 1 else {
+                throw VaaniCoreError.invalidProbability(field: "candidate.confidence", value: confidence)
+            }
         }
         guard latencyMilliseconds >= 0 else {
             throw VaaniCoreError.invalidConfiguration(
@@ -129,7 +134,7 @@ public struct RecognitionCandidate: Codable, Equatable, Sendable {
         try self.init(
             id: try container.decode(String.self, forKey: .id),
             text: try container.decode(String.self, forKey: .text),
-            confidence: try container.decode(Double.self, forKey: .confidence),
+            confidence: try container.decodeIfPresent(Double.self, forKey: .confidence),
             detectedLanguages: try container.decode(LanguageDistribution.self, forKey: .detectedLanguages),
             segments: try container.decode([RecognitionSegment].self, forKey: .segments),
             model: try container.decode(ModelIdentity.self, forKey: .model),

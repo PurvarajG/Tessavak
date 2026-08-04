@@ -446,8 +446,14 @@ public actor LivePipelineCoordinator {
                     case .onLowConfidence(let threshold):
                         // A failed primary leaves nothing to compare against,
                         // so the secondary is the fallback path (§15).
+                        //
+                        // A recogniser that reports no confidence at all does
+                        // not trigger a second decode: absence of a signal is
+                        // not evidence of a low one. Callers who want both
+                        // decoders unconditionally have their own lever —
+                        // `.immediately`, which `.evaluation` policy selects.
                         let best = await bestConfidence(for: execution.primaryRoute)
-                        shouldRun = !primarySucceeded || best < threshold
+                        shouldRun = !primarySucceeded || (best.map { $0 < threshold } ?? false)
                     }
                     if shouldRun {
                         ranSecondary = true
@@ -504,8 +510,13 @@ public actor LivePipelineCoordinator {
         recordedCandidates.append((route: route, candidate: candidate))
     }
 
-    private func bestConfidence(for route: Route) -> Double {
-        recordedCandidates.filter { $0.route == route }.map(\.candidate.confidence).max() ?? 0
+    /// Highest confidence recorded for `route`, or `nil` when none of that
+    /// route's candidates reported one.
+    private func bestConfidence(for route: Route) -> Double? {
+        recordedCandidates
+            .filter { $0.route == route }
+            .compactMap(\.candidate.confidence)
+            .max()
     }
 
     // MARK: - Helpers

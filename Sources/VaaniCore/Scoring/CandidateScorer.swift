@@ -136,7 +136,13 @@ public struct CandidateScorer: Sendable {
         let dominantLanguage = evidence.languages.dominant.language
 
         var components: [ScoreComponent: Double] = [:]
-        components[.acousticConfidence] = candidate.confidence
+        // Absent when the recogniser reports no confidence at all. Leaving the
+        // component out (rather than substituting 0) keeps "unknown" distinct
+        // from "certainly bad"; the total is renormalised below so the
+        // omission costs nothing.
+        if let confidence = candidate.confidence {
+            components[.acousticConfidence] = confidence
+        }
         components[.languageAgreement] = languageAgreement(candidate: candidate, evidence: evidence)
         components[.scriptAgreement] = scriptAgreement(candidate: candidate, dominantLanguage: dominantLanguage)
         components[.domainTermRecall] = domainTermRecall(candidate: candidate, protectedTerms: protectedTerms)
@@ -147,9 +153,17 @@ public struct CandidateScorer: Sendable {
         components[.repetitionPenalty] = repetitionPenalty(candidate: candidate)
         components[.latencyCost] = latencyCost(candidate: candidate)
 
-        let total = ScoreComponent.allCases.reduce(0.0) { partial, component in
+        let weighted = ScoreComponent.allCases.reduce(0.0) { partial, component in
             partial + (components[component] ?? 0) * (weights.values[component] ?? 0)
         }
+
+        // Renormalise over the components actually present, so a missing one
+        // is not a silent penalty. When every component is present — the case
+        // for all replay fixtures and any recogniser that reports confidence —
+        // the factor is exactly 1.0 and the total is bit-identical to before.
+        let totalWeight = ScoreComponent.allCases.reduce(0.0) { $0 + (weights.values[$1] ?? 0) }
+        let presentWeight = components.keys.reduce(0.0) { $0 + (weights.values[$1] ?? 0) }
+        let total = presentWeight == 0 ? 0 : weighted * (totalWeight / presentWeight)
 
         return CandidateScore(candidateID: candidate.id, total: total, components: components)
     }
