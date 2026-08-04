@@ -29,7 +29,37 @@ Plan: `docs/superpowers/plans/2026-07-24-vaanicore-phase2-live-contracts.md`
 - [x] Task 4: `LivePipelineCoordinator` actor (deadline, cancellation, degraded fallback; mock-tested, no wall-clock sleeps)
 - [x] Task 5: `ReplayStreamingRecognizer` shim; contract suite + coordinator end-to-end against `Fixtures/replay/smoke.json`
 - [x] Task 6: Extend `scripts/verify.sh` import scan; docs update for contracts half; full gate green
-- [ ] Checkpoint A: Owner review before third-party dependency lands ← **you are here**
-- [ ] Task 7: `VaaniWhisper` target — whisper.cpp SPM dependency (pinned revision) + `WhisperRecognizer` adapter; model-gated tests skip without `VAANI_WHISPER_MODEL`
-- [ ] Task 8: `vaani-live` file-driven CLI harness (WAV in → transcript + decision codes + labelled single-run timing)
-- [ ] Final verification: `./scripts/verify.sh`, full suite (+30 tests minimum), docs/README updated, licence + revision recorded
+- [x] Checkpoint A: Owner review before third-party dependency lands
+- [x] Task 7: `VaaniWhisper` target — whisper.cpp SPM dependency (pinned revision) + `WhisperRecognizer` adapter; model-gated tests skip without `VAANI_WHISPER_MODEL`
+- [x] Task 8: `vaani-live` file-driven CLI harness (WAV in → transcript + decision codes + labelled single-run timing)
+- [x] Final verification: `./scripts/verify.sh`, full suite (253 tests, +35), docs/README updated, licence + revision recorded
+
+Landed beyond the plan, from running the code rather than testing it:
+
+- [x] `RecognitionCandidate.confidence` is `Double?` — absent confidence is no
+      longer scored as zero, and no longer trips the low-confidence secondary
+- [x] `WhisperRecognizer` rejects non-ggml model files by header magic before
+      the vendored loader traps on them; `vaani-live` exits 64, not 70
+
+## Gating the Phase 2 merge to `main`
+
+- [ ] Run the three model-gated tests at least once against a real
+      `ggml-*.bin` — they have never executed, so no test has yet exercised
+      the recogniser adapter against a real decode
+- [ ] One real `vaani-live` decode: segment timings, language mapping, and
+      whether the real API populates `confidence` or leaves it `nil`
+- [ ] Only then merge Phase 2 to `main`
+
+Model constraint: the vendored whisper.cpp hardcodes `WHISPER_N_MEL 80`
+(`whisper.h:24`, asserted at `whisper.cpp:1430`). **`large-v3` and
+`large-v3-turbo` are 128-mel and will not work** — their magic is valid, so
+the header pre-flight passes and the failure lands in the documented hole.
+Use v2 or below.
+
+## Deferred to Phase 3
+
+Mic capture/AVFoundation, VAD, FluidAudio/Parakeet as a second *real*
+recogniser (which is what makes dual routing meaningful rather than the
+current single-model stand-in), streaming partials, fuzzy correction, the
+labelled corpus, latency benchmarking on reference hardware, and process
+isolation for the corrupt-model abort documented in `docs/initial-build.md`.

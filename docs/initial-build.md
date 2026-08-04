@@ -254,6 +254,29 @@ unless `VAANI_WHISPER_MODEL` points to an existing non-empty `.bin` model.
 No model is downloaded by CI. Three of those tests are model-gated and skip
 without that environment variable.
 
+**First real-model run (2026-08-04).** All three gated tests pass against
+`ggml-base.bin` (multilingual, 148 MB), and `vaani-live` transcribed a real
+16 kHz mono utterance correctly end to end, with `--language auto`
+auto-detecting `en` at p = 0.98. Two things this pinned down that mocks
+could not: SwiftWhisper converts segment times from centiseconds to
+milliseconds (`* 10`), so the adapter's `Int64(segment.startTime)` mapping
+is in the right unit; and the real API populates no confidence at all, so
+`RecognitionCandidate.confidence` is `nil` on every whisper candidate in
+practice, not just in principle.
+
+**Model constraint.** The vendored whisper.cpp hardcodes `WHISPER_N_MEL 80`
+(`whisper.h:24`, asserted at `whisper.cpp:1430`, and rejected in
+`whisper_set_mel`). The 128-mel models — `large-v3` and `large-v3-turbo` —
+carry valid ggml magic, so they pass the header pre-flight and then fail
+inside the loader. Use v2 or below.
+
+**Language detection is discarded.** whisper.cpp auto-detects the spoken
+language and writes it back into `params.language`, but the adapter reports
+`.other` for the `auto` hint because SwiftWhisper's `Segment` exposes no
+language. The detected value is reachable through `Whisper.params.language`
+after a decode; wiring it into `LanguageDistribution` would replace a
+placeholder with a real signal. Not done here.
+
 ## Phase 2, Task 8 — `vaani-live` file-driven harness
 
 `Sources/VaaniLive` adds an executable target, `vaani-live`, with a
