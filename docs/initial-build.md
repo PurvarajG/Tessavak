@@ -222,6 +222,38 @@ Enforced contracts:
 
 Test count after this half: 218 (up from 155).
 
+## Phase 2, Task 7 — whisper.cpp adapter
+
+`VaaniWhisper` is the only target that imports the real recogniser binding.
+It provides `WhisperRecognizer`, a whole-utterance `StreamingRecognizer`
+that validates a non-empty local model file, buffers canonical 16 kHz mono
+PCM, converts its `Int16` samples to `Float`, and produces one final update.
+Its whisper context is serialized behind an actor; no transcript or audio
+content is emitted as diagnostics. The candidate's latency field is set to
+zero as an unavailable value, not a measured performance result.
+
+The preferred `ggml-org/whisper.cpp` repository did not contain a root
+`Package.swift` at the revision evaluated for this task, so the approved SPM
+fallback is pinned exactly to:
+
+- `https://github.com/exPHAT/SwiftWhisper`
+- revision `c340197966ebd264f3135d3955874b40f8ed58bc`
+
+SwiftWhisper supplies its bundled whisper.cpp sources, and its `LICENSE` and
+the bundled `whisper.cpp/LICENSE` are MIT licenses. The adapter's
+`ModelIdentity` intentionally reports provider `whisper.cpp` and the exact
+revision above. SwiftWhisper's public API exposes segment timings but not
+segment confidence or the auto-detected language ID; those unavailable
+values are represented as `nil` confidence and an `.other` language
+distribution for the `auto` hint rather than fabricated values.
+
+`Tests/VaaniWhisperTests` always exercises missing and empty model-path
+validation. Its streaming-contract, cancellation, and generated one-second
+sine/silence PCM WAV decode tests use Swift Testing `.enabled(if:)` and skip
+unless `VAANI_WHISPER_MODEL` points to an existing non-empty `.bin` model.
+No model is downloaded by CI. The suite contains 223 tests in total; three
+of those tests are model-gated and skip without that environment variable.
+
 ## Next milestone
 
 Phase 1 (this hardening pass) is complete; Phase 2 (live orchestration
