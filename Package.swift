@@ -8,10 +8,15 @@ let package = Package(
         .library(name: "VaaniCore", targets: ["VaaniCore"]),
         .library(name: "VaaniPacks", targets: ["VaaniPacks"]),
         .library(name: "VaaniAdapters", targets: ["VaaniAdapters"]),
+        .library(name: "VaaniWhisper", targets: ["VaaniWhisper"]),
         .executable(name: "vaani-bench", targets: ["VaaniBench"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0")
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
+        .package(
+            url: "https://github.com/exPHAT/SwiftWhisper",
+            revision: "c340197966ebd264f3135d3955874b40f8ed58bc"
+        ),
     ],
     targets: [
         .target(name: "VaaniCore"),
@@ -21,6 +26,13 @@ let package = Package(
             resources: [.process("Resources")]
         ),
         .target(name: "VaaniAdapters", dependencies: ["VaaniCore"]),
+        .target(
+            name: "VaaniWhisper",
+            dependencies: [
+                "VaaniCore",
+                .product(name: "SwiftWhisper", package: "SwiftWhisper"),
+            ]
+        ),
         .executableTarget(
             name: "VaaniBench",
             dependencies: [
@@ -40,5 +52,6 @@ let package = Package(
             name: "VaaniBenchTests",
             dependencies: ["VaaniBench", "VaaniCore", "VaaniPacks", "VaaniAdapters"]
         ),
+        .testTarget(name: "VaaniWhisperTests", dependencies: ["VaaniWhisper", "VaaniCore"]),
     ]
 )

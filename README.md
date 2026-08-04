@@ -33,14 +33,17 @@ value types, async `StreamingRecognizer` and `Detector` protocols, a
 `LivePipelineCoordinator` actor with cancellation, latency-budget, and
 degraded-fallback semantics.
 
-This layer is **contract-level only**. Every recogniser exercised so far is
-a mock or a replay shim, all timing goes through an injected
-`DeadlineScheduler`, and nothing captures audio from a device — so
-recognition accuracy and latency on real speech remain unmeasured.
+This layer is **contract-level except for the optional VaaniWhisper adapter**.
+`WhisperRecognizer` buffers a caller-provided utterance and performs one
+whole-utterance whisper.cpp decode from a local model file; no model is
+bundled or downloaded by the package. All other recognisers exercised by the
+standard suite are mocks or replay shims, all coordinator timing goes through
+an injected `DeadlineScheduler`, and nothing captures audio from a device —
+so recognition accuracy and latency on real speech remain unmeasured.
 
-Real audio capture, voice activity detection, live recogniser adapters
-(FluidAudio, whisper.cpp), local-LLM correction, model downloading, Wffl
-shadow mode, and the W1 application are **not** implemented yet. See
+Real audio capture, voice activity detection, FluidAudio, true streaming
+whisper partials, local-LLM correction, model downloading, Wffl shadow mode,
+and the W1 application are **not** implemented yet. See
 `docs/initial-build.md` for the full boundary, enforced contracts, and
 deferred work.
 
