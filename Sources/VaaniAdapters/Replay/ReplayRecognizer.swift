@@ -1,10 +1,6 @@
 import Foundation
 import VaaniCore
 
-public protocol Recognizer: Sendable {
-    func candidates(for utteranceID: String) async throws -> [RecognitionCandidate]
-}
-
 public struct ReplayUtterance: Codable, Equatable, Sendable {
     public let id: String
     public let observations: [EvidenceObservation]
@@ -102,10 +98,11 @@ public struct ReplayManifest: Codable, Equatable, Sendable {
     }
 }
 
-/// A deterministic `Recognizer` backed by a fixed replay manifest. Used to
-/// exercise the full detection/routing/scoring/correction pipeline against
-/// checked-in fixtures without any real audio capture or model inference.
-public actor ReplayRecognizer: Recognizer {
+/// A deterministic `ReplayCandidateSource` backed by a fixed replay manifest.
+/// Used to exercise the full detection/routing/scoring/correction pipeline
+/// against checked-in fixtures without any real audio capture or model
+/// inference.
+public actor ReplayRecognizer: ReplayCandidateSource {
     private let utterancesByID: [String: ReplayUtterance]
 
     public init(manifest: ReplayManifest) throws {
