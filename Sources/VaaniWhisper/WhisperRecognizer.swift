@@ -127,7 +127,10 @@ public struct WhisperRecognizer: StreamingRecognizer {
 
 private struct WhisperDecodeResult: Sendable {
     let text: String
-    let confidence: Double
+    /// Always `nil`: SwiftWhisper's `Segment` exposes only start time, end
+    /// time, and text, so there is no confidence signal to report. `nil` says
+    /// "unknown"; reporting 0 would say "certainly bad".
+    let confidence: Double?
     let segments: [RecognitionSegment]
 }
 
@@ -169,7 +172,7 @@ private actor WhisperSession {
         }
         return WhisperDecodeResult(
             text: segments.map(\.text).joined(),
-            confidence: 0,
+            confidence: nil,
             segments: segments
         )
     }
