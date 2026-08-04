@@ -19,9 +19,11 @@ public struct RouteDecision: Codable, Equatable, Sendable {
 /// callers and diagnostics can rely on positional meaning.
 public struct AdaptiveRouter: Sendable {
     private let policy: RoutingPolicy
+    private let budgets: SessionBudgets
 
-    public init(policy: RoutingPolicy) {
+    public init(policy: RoutingPolicy, budgets: SessionBudgets = .default) {
         self.policy = policy
+        self.budgets = budgets
     }
 
     public func decide(evidence: EvidenceSnapshot) -> RouteDecision {
@@ -62,6 +64,46 @@ public struct AdaptiveRouter: Sendable {
         }
 
         return RouteDecision(route: route, reasons: reasons)
+    }
+
+    /// Turns the route decision into an executable plan for live recognition.
+    ///
+    /// Additive: `decide(evidence:)` keeps its exact Phase 1 behaviour, and a
+    /// dual decision is what gets split here into an ordered primary and
+    /// secondary. The dominant language leads, so the more likely recogniser
+    /// produces the first partials.
+    public func plan(for evidence: EvidenceSnapshot, policy sessionPolicy: SessionPolicy) throws
+        -> RoutingPlan
+    {
+        let decision = decide(evidence: evidence)
+        let budget = budgets.milliseconds(for: sessionPolicy)
+
+        guard decision.route == .dual else {
+            return try RoutingPlan(
+                primary: decision.route,
+                secondary: nil,
+                secondaryTrigger: .never,
+                latencyBudgetMilliseconds: budget,
+                policy: sessionPolicy
+            )
+        }
+
+        let leadsWithEnglish = evidence.languages.dominant.language == .english
+        // Evaluation runs both decoders unconditionally: spec §7 asks for
+        // deterministic execution and complete diagnostics, which a
+        // confidence-dependent trigger would not give.
+        let trigger: SecondaryTrigger =
+            sessionPolicy == .evaluation
+            ? .immediately
+            : .onLowConfidence(threshold: policy.confidentLanguageThreshold)
+
+        return try RoutingPlan(
+            primary: leadsWithEnglish ? .englishStreaming : .multilingual,
+            secondary: leadsWithEnglish ? .multilingual : .englishStreaming,
+            secondaryTrigger: trigger,
+            latencyBudgetMilliseconds: budget,
+            policy: sessionPolicy
+        )
     }
 
     private static func format3(_ value: Double) -> String {
