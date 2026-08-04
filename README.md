@@ -21,12 +21,26 @@ JSON replay fixture
   → JSON + Markdown benchmark report
 ```
 
+This slice has been hardened per a Phase 1 audit remediation pass —
+manifest/report schema validation, corpus-bound benchmark baselines,
+terminating output rendering, and a single reproducible verification gate.
+
+## Live orchestration contracts
+
+Phase 2's first half adds the live layer VaaniCore owns: audio and utterance
+value types, async `StreamingRecognizer` and `Detector` protocols, a
+`RoutingPlan` derived from the existing route decision, and a
+`LivePipelineCoordinator` actor with cancellation, latency-budget, and
+degraded-fallback semantics.
+
+This layer is **contract-level only**. Every recogniser exercised so far is
+a mock or a replay shim, all timing goes through an injected
+`DeadlineScheduler`, and nothing captures audio from a device — so
+recognition accuracy and latency on real speech remain unmeasured.
+
 Real audio capture, voice activity detection, live recogniser adapters
 (FluidAudio, whisper.cpp), local-LLM correction, model downloading, Wffl
-shadow mode, and the W1 application are **not** implemented yet. This slice
-has been hardened per a Phase 1 audit remediation pass — manifest/report
-schema validation, corpus-bound benchmark baselines, terminating output
-rendering, and a single reproducible verification gate. See
+shadow mode, and the W1 application are **not** implemented yet. See
 `docs/initial-build.md` for the full boundary, enforced contracts, and
 deferred work.
 

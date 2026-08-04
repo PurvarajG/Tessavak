@@ -167,6 +167,61 @@ corpus with real or realistic audio, which does not exist yet.
 - Wffl shadow-mode integration and the W1 dictation shell.
 - Additional language/domain packs beyond the BAPS/Gujarati seed.
 
+## Phase 2, first half — live orchestration contracts (complete)
+
+Tasks 1–6 of
+`docs/superpowers/plans/2026-07-24-vaanicore-phase2-live-contracts.md` are
+implemented. VaaniCore now owns the live orchestration layer:
+
+- `AudioFormat` / `AudioChunk` / `SpeechEvent` (`Types/Audio.swift`) —
+  validating initializers; `AudioChunk` is deliberately **not** `Codable`, so
+  audio cannot reach a report or a diagnostic event.
+- `StreamingRecognizer`, `RecognitionUpdate`, and `Detector` — the live
+  contracts. The Phase 1 `Recognizer` protocol moved into VaaniCore
+  unchanged in shape under its accurate name, `ReplayCandidateSource`.
+- `RoutingPlan` + `SessionBudgets` + `AdaptiveRouter.plan(for:policy:)` —
+  turns a `RouteDecision` into an executable plan (ordered primary/secondary
+  routes, secondary trigger, per-policy latency budget).
+  `decide(evidence:)` behaviour is unchanged.
+- `LivePipelineCoordinator` — an actor that processes one utterance:
+  validates speech-event ordering, accumulates evidence via an injected
+  `Detector`, plans a route, runs primary and conditionally secondary
+  recognisers, then scores, corrects, and renders through the existing
+  Phase 1 components.
+- `ReplayStreamingRecognizer` / `ReplayDetector` (VaaniAdapters) — replay
+  fixtures driven through the live path.
+
+What this half does **not** establish:
+
+- **No real audio and no real model.** Every recogniser exercised here is a
+  mock or a replay shim. Recognition accuracy on real speech remains
+  entirely unmeasured.
+- **No measured latency.** All timing goes through an injected
+  `DeadlineScheduler`; the tests use schedulers that never expire, expire
+  immediately, or expire on a signal. No number produced by this half is a
+  performance result.
+- **No microphone capture and no VAD.** `SpeechEvent` streams are
+  constructed by callers; nothing produces them from a device.
+
+Enforced contracts:
+
+- `verify.sh` now fails if `Sources/VaaniCore` imports anything but
+  `Foundation`, and if whisper appears in VaaniCore, VaaniAdapters,
+  VaaniPacks, or VaaniBench (Task 7 confines it to `VaaniWhisper`).
+- The `StreamingRecognizer` contract suite is adapter-agnostic and runs
+  against both the mock and the replay shim: at least one final update, no
+  update after the final, non-empty model identity, stream termination, and
+  termination under mid-stream cancellation.
+- Coordinator invariants are tested with mocks and no wall-clock sleeps:
+  event ordering, degraded fallback for a missing or failing recogniser,
+  secondary triggered/skipped by confidence, budget exhaustion with and
+  without a completed candidate, and external cancellation.
+- Driving `Fixtures/replay/smoke.json` through the coordinator reproduces
+  each utterance's expected text and route, matching the Phase 1 benchmark
+  outcome via the live path.
+
+Test count after this half: 218 (up from 155).
+
 ## Next milestone
 
 Phase 1 (this hardening pass) is complete; Phase 2 (live orchestration

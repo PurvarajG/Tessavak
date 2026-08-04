@@ -21,6 +21,23 @@ if rg -n 'import (SwiftUI|AppKit|SwiftData|CoreData|AVFoundation|CoreML)' Source
     exit 1
 fi
 
+# VaaniCore imports Foundation only: any other import is a third-party or
+# framework dependency creeping into the engine core.
+echo "==> checking VaaniCore imports nothing but Foundation"
+if rg -n --no-heading '^\s*import\s+' Sources/VaaniCore | grep -v 'import Foundation$'; then
+    echo "VaaniCore imports a module other than Foundation" >&2
+    exit 1
+fi
+
+# whisper.cpp arrives in Task 7 and must stay confined to the VaaniWhisper
+# target; nothing else may link a recogniser implementation.
+echo "==> checking whisper stays out of the core, adapters, packs, and bench"
+if rg -n -i 'import (whisper|SwiftWhisper|whisper_cpp)' \
+    Sources/VaaniCore Sources/VaaniAdapters Sources/VaaniPacks Sources/VaaniBench; then
+    echo "found a whisper import outside the VaaniWhisper target" >&2
+    exit 1
+fi
+
 # The benchmark report is written to VERIFY_REPORT_DIR when the caller sets
 # it (CI sets this to a stable path so it can upload the report as a build
 # artifact after this script exits). Otherwise a temporary directory is
