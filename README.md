@@ -44,6 +44,28 @@ shadow mode, and the W1 application are **not** implemented yet. See
 `docs/initial-build.md` for the full boundary, enforced contracts, and
 deferred work.
 
+## `vaani-live` — file-driven harness
+
+`vaani-live transcribe` runs one 16 kHz mono 16-bit PCM WAV file through the
+live pipeline end to end:
+
+```bash
+swift run vaani-live transcribe --model <path.bin> --audio <path.wav> \
+  [--policy interactive|meeting] [--language auto|en|gu] \
+  [--output-policy preserveMixed|gujaratiScript|bapsRoman]
+```
+
+**No real recogniser is wired in yet.** `vaani-live` currently drives the
+pipeline with a stub `StreamingRecognizer` that returns fixed placeholder
+text; the CLI prints an unmissable warning around the transcript saying so.
+Wiring in a real model (whisper.cpp, `VaaniWhisper`) is a separate,
+in-progress piece of work confined behind one factory function
+(`makeRecognizerFactory` in `Sources/VaaniLive/StubRecognizer.swift`) so it
+is a small, mechanical edit once that adapter exists. A WAV outside 16 kHz
+mono 16-bit PCM is rejected with the exact `ffmpeg -ar 16000 -ac 1` command
+needed to convert it. Exit codes match `vaani-bench`: `0` success, `64`
+invalid input, `70` internal failure.
+
 ## Prerequisites
 
 - macOS 15 or later (Apple Silicon)

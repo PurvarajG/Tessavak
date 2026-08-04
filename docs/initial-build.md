@@ -222,6 +222,58 @@ Enforced contracts:
 
 Test count after this half: 218 (up from 155).
 
+## Phase 2, Task 8 — `vaani-live` file-driven harness (complete; stub recogniser only)
+
+`Sources/VaaniLive` adds an executable target, `vaani-live`, with a
+`transcribe` subcommand that reads a caller-supplied WAV file, wraps it as
+one utterance's `SpeechEvent` stream, and drives it through
+`LivePipelineCoordinator` with the bundled BAPS pack:
+
+```bash
+swift run vaani-live transcribe --model <path.bin> --audio <path.wav> \
+  [--policy interactive|meeting] [--language auto|en|gu] \
+  [--output-policy preserveMixed|gujaratiScript|bapsRoman]
+```
+
+- **WAV parsing.** `Sources/VaaniLive/WAVFile.swift` is a minimal
+  hand-written RIFF/WAVE chunk-walking parser — no AVFoundation. It accepts
+  only 16 kHz mono 16-bit PCM and rejects everything else (wrong sample
+  rate, channel count, bit depth, non-PCM format tag, truncated/garbage
+  headers, missing `fmt `/`data` chunks) with a message naming the exact
+  `ffmpeg -ar 16000 -ac 1` conversion needed.
+- **Utterance framing.** `SpeechEventBuilder` chunks the decoded samples into
+  100 ms `AudioChunk`s and emits `speechStarted` → chunks → `speechEnded` →
+  `endOfStream`, computing every timestamp from the same frame-offset
+  formula on both sides of a chunk boundary so the coordinator's monotonic-
+  ordering check is always satisfied despite millisecond rounding.
+  `LanguageHintDetector` is a placeholder that turns `--language` directly
+  into one evidence observation (real acoustic/script-based language ID
+  remains deferred).
+- **No real recogniser yet.** This target intentionally does **not** depend
+  on `VaaniWhisper` (built separately) or import anything whisper-related.
+  `Sources/VaaniLive/StubRecognizer.swift` defines
+  `makeRecognizerFactory(modelPath:language:)` — the single seam a real
+  adapter drops into — currently returning a stub `StreamingRecognizer` that
+  drains the audio and yields one fixed placeholder candidate. The CLI
+  prints an unmissable banner before and after the transcript stating that
+  no real recogniser is wired up and the printed text is not a real
+  transcription. `--model` is still validated (must exist, be a regular
+  file, be non-empty) so the same failure path Task 7's real recogniser will
+  use is already exercised.
+- **Exit codes** match `vaani-bench`: `0` success, `64` invalid input (bad
+  WAV, missing/empty model file), `70` internal failure (pipeline/setup
+  errors).
+- **Timing.** The printed decode time is always labelled `measured on this
+  machine, single run, not a benchmark` — with the stub recogniser it is not
+  even a real decode, only pipeline overhead.
+- Tests: `Tests/VaaniLiveTests/WAVFileTests.swift` builds WAV byte streams by
+  hand to cover a valid round trip, chunk-walking around unknown/odd-padded
+  chunks, every rejected format dimension, and truncated/garbage headers.
+  `Tests/VaaniLiveTests/TranscribeCommandTests.swift` covers `--help`
+  parsing and argument validation (required options, unknown enum values).
+
+Test count after Task 8: 240 (up from 218).
+
 ## Next milestone
 
 Phase 1 (this hardening pass) is complete; Phase 2 (live orchestration
