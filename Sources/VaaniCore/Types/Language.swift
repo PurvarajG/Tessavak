@@ -6,6 +6,8 @@ public enum VaaniCoreError: Error, Equatable, Sendable {
     case invalidTimeRange(start: Int64, end: Int64)
     case sensitiveDiagnosticAttribute(String)
     case invalidConfiguration(String)
+    case invalidAudioFormat(String)
+    case invalidAudioChunk(String)
 }
 
 public enum LanguageTag: String, Codable, CaseIterable, Hashable, Sendable {
