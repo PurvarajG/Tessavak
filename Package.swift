@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "VaaniAdapters", targets: ["VaaniAdapters"]),
         .library(name: "VaaniWhisper", targets: ["VaaniWhisper"]),
         .executable(name: "vaani-bench", targets: ["VaaniBench"]),
+        .executable(name: "vaani-live", targets: ["VaaniLive"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
@@ -42,6 +43,17 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
+        // vaani-live is single-model: VaaniWhisper serves every route. Real
+        // dual-recogniser routing is Phase 3 work.
+        .executableTarget(
+            name: "VaaniLive",
+            dependencies: [
+                "VaaniCore",
+                "VaaniPacks",
+                "VaaniWhisper",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
+            ]
+        ),
         .testTarget(name: "VaaniCoreTests", dependencies: ["VaaniCore"]),
         .testTarget(name: "VaaniPacksTests", dependencies: ["VaaniPacks"]),
         .testTarget(
@@ -53,5 +65,9 @@ let package = Package(
             dependencies: ["VaaniBench", "VaaniCore", "VaaniPacks", "VaaniAdapters"]
         ),
         .testTarget(name: "VaaniWhisperTests", dependencies: ["VaaniWhisper", "VaaniCore"]),
+        .testTarget(
+            name: "VaaniLiveTests",
+            dependencies: ["VaaniLive", "VaaniCore"]
+        ),
     ]
 )

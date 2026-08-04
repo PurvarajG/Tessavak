@@ -251,8 +251,56 @@ distribution for the `auto` hint rather than fabricated values.
 validation. Its streaming-contract, cancellation, and generated one-second
 sine/silence PCM WAV decode tests use Swift Testing `.enabled(if:)` and skip
 unless `VAANI_WHISPER_MODEL` points to an existing non-empty `.bin` model.
-No model is downloaded by CI. The suite contains 223 tests in total; three
-of those tests are model-gated and skip without that environment variable.
+No model is downloaded by CI. Three of those tests are model-gated and skip
+without that environment variable.
+
+## Phase 2, Task 8 — `vaani-live` file-driven harness
+
+`Sources/VaaniLive` adds an executable target, `vaani-live`, with a
+`transcribe` subcommand that reads a caller-supplied WAV file, wraps it as
+one utterance's `SpeechEvent` stream, and drives it through
+`LivePipelineCoordinator` with the bundled BAPS pack:
+
+```bash
+swift run vaani-live transcribe --model <path.bin> --audio <path.wav> \
+  [--policy interactive|meeting] [--language auto|en|gu] \
+  [--output-policy preserveMixed|gujaratiScript|bapsRoman]
+```
+
+- **WAV parsing.** `Sources/VaaniLive/WAVFile.swift` is a minimal
+  hand-written RIFF/WAVE chunk-walking parser — no AVFoundation. It accepts
+  only 16 kHz mono 16-bit PCM and rejects everything else (wrong sample
+  rate, channel count, bit depth, non-PCM format tag, truncated/garbage
+  headers, missing `fmt `/`data` chunks) with a message naming the exact
+  `ffmpeg -ar 16000 -ac 1` conversion needed.
+- **Utterance framing.** `SpeechEventBuilder` chunks the decoded samples into
+  100 ms `AudioChunk`s and emits `speechStarted` → chunks → `speechEnded` →
+  `endOfStream`, computing every timestamp from the same frame-offset
+  formula on both sides of a chunk boundary so the coordinator's monotonic-
+  ordering check is always satisfied despite millisecond rounding.
+  `LanguageHintDetector` is a placeholder that turns `--language` directly
+  into one evidence observation (real acoustic/script-based language ID
+  remains deferred).
+- **Recogniser.** `Sources/VaaniLive/RecognizerFactory.swift` builds a
+  `VaaniWhisper.WhisperRecognizer` from `--model` and `--language` and
+  returns it for every route. The harness is single-model; routing two real
+  recognisers against each other is Phase 3. No model ships with the package
+  and none is downloaded, so `vaani-live` cannot run without a caller-
+  supplied ggml model file.
+- **Exit codes** match `vaani-bench`: `0` success, `64` invalid input (bad
+  WAV, missing/empty model file), `70` internal failure (pipeline/setup
+  errors).
+- **Timing.** The printed decode time is always labelled `measured on this
+  machine, single run, not a benchmark`. It is one unrepeated wall-clock
+  reading on whatever machine ran it — not a benchmark, and not comparable
+  across machines or runs.
+- Tests: `Tests/VaaniLiveTests/WAVFileTests.swift` builds WAV byte streams by
+  hand to cover a valid round trip, chunk-walking around unknown/odd-padded
+  chunks, every rejected format dimension, and truncated/garbage headers.
+  `Tests/VaaniLiveTests/TranscribeCommandTests.swift` covers `--help`
+  parsing and argument validation (required options, unknown enum values).
+
+Test count after Tasks 7 and 8 together: 250 (up from 218).
 
 ## Next milestone
 

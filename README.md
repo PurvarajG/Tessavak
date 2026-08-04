@@ -47,6 +47,25 @@ and the W1 application are **not** implemented yet. See
 `docs/initial-build.md` for the full boundary, enforced contracts, and
 deferred work.
 
+## `vaani-live` — file-driven harness
+
+`vaani-live transcribe` runs one 16 kHz mono 16-bit PCM WAV file through the
+live pipeline end to end:
+
+```bash
+swift run vaani-live transcribe --model <path.bin> --audio <path.wav> \
+  [--policy interactive|meeting] [--language auto|en|gu] \
+  [--output-policy preserveMixed|gujaratiScript|bapsRoman]
+```
+
+`--model` takes a whisper.cpp ggml model file; `VaaniWhisper` serves every
+route (single-model — routing two real recognisers against each other is
+Phase 3). **No model ships with this package and none is downloaded**, so
+the harness cannot run until you supply one. A WAV outside 16 kHz
+mono 16-bit PCM is rejected with the exact `ffmpeg -ar 16000 -ac 1` command
+needed to convert it. Exit codes match `vaani-bench`: `0` success, `64`
+invalid input, `70` internal failure.
+
 ## Prerequisites
 
 - macOS 15 or later (Apple Silicon)
