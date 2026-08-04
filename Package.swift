@@ -32,7 +32,10 @@ let package = Package(
         ),
         .testTarget(name: "VaaniCoreTests", dependencies: ["VaaniCore"]),
         .testTarget(name: "VaaniPacksTests", dependencies: ["VaaniPacks"]),
-        .testTarget(name: "VaaniAdaptersTests", dependencies: ["VaaniAdapters"]),
+        .testTarget(
+            name: "VaaniAdaptersTests",
+            dependencies: ["VaaniAdapters", "VaaniCore", "VaaniPacks"]
+        ),
         .testTarget(
             name: "VaaniBenchTests",
             dependencies: ["VaaniBench", "VaaniCore", "VaaniPacks", "VaaniAdapters"]
