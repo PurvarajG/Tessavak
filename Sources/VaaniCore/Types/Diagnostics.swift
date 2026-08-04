@@ -4,6 +4,8 @@ public enum DecisionCode: String, Codable, Sendable {
     case routePrimaryEnglish, routePrimaryMultilingual, routeDual
     case candidateSelected, deterministicCorrectionApplied, outputPolicyApplied
     case degradedFallback
+    case secondaryTriggered, secondarySkipped
+    case budgetRespected, budgetExhausted
 }
 
 public struct DiagnosticEvent: Codable, Equatable, Sendable {
