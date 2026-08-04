@@ -24,6 +24,63 @@ import VaaniCore
         }
     }
 
+    // MARK: - Magic pre-flight
+    //
+    // These need no real model: they prove a file the vendored loader would
+    // trap on is rejected before a whisper context is ever constructed.
+
+    /// Writes `bytes` to a uniquely named temporary file for one test.
+    private func temporaryModel(named name: String, bytes: [UInt8]) -> URL {
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("vaani-whisper-\(name)-\(UUID().uuidString).bin")
+        FileManager.default.createFile(atPath: url.path, contents: Data(bytes))
+        return url
+    }
+
+    @Test func initializerRejectsAFileThatIsNotAGGMLModel() throws {
+        let modelURL = temporaryModel(named: "junk", bytes: [0xde, 0xad, 0xbe, 0xef, 0x00, 0x01])
+        defer { try? FileManager.default.removeItem(at: modelURL) }
+
+        let error = #expect(throws: VaaniCoreError.self) {
+            try WhisperRecognizer(modelFileURL: modelURL, languageHint: .auto)
+        }
+        guard case .invalidConfiguration(let message) = try #require(error) else {
+            Issue.record("expected invalidConfiguration")
+            return
+        }
+        #expect(message.contains("not a ggml whisper model"))
+        #expect(message.contains("de ad be ef"))
+    }
+
+    @Test func initializerRejectsAGGUFModelByName() throws {
+        let modelURL = temporaryModel(named: "gguf", bytes: Array("GGUF".utf8) + [0x03, 0x00])
+        defer { try? FileManager.default.removeItem(at: modelURL) }
+
+        let error = #expect(throws: VaaniCoreError.self) {
+            try WhisperRecognizer(modelFileURL: modelURL, languageHint: .auto)
+        }
+        guard case .invalidConfiguration(let message) = try #require(error) else {
+            Issue.record("expected invalidConfiguration")
+            return
+        }
+        #expect(message.contains("GGUF"))
+        #expect(message.contains("ggml-*.bin"))
+    }
+
+    @Test func initializerRejectsAFileTooShortToCarryMagic() throws {
+        let modelURL = temporaryModel(named: "short", bytes: [0x6c, 0x6d])
+        defer { try? FileManager.default.removeItem(at: modelURL) }
+
+        let error = #expect(throws: VaaniCoreError.self) {
+            try WhisperRecognizer(modelFileURL: modelURL, languageHint: .auto)
+        }
+        guard case .invalidConfiguration(let message) = try #require(error) else {
+            Issue.record("expected invalidConfiguration")
+            return
+        }
+        #expect(message.contains("too short to identify"))
+    }
+
     @Test(.enabled(if: WhisperTestModel.isAvailable)) func realModelSatisfiesStreamingRecognizerContract()
         async throws
     {

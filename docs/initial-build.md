@@ -287,9 +287,22 @@ swift run vaani-live transcribe --model <path.bin> --audio <path.wav> \
   recognisers against each other is Phase 3. No model ships with the package
   and none is downloaded, so `vaani-live` cannot run without a caller-
   supplied ggml model file.
-- **Exit codes** match `vaani-bench`: `0` success, `64` invalid input (bad
-  WAV, missing/empty model file), `70` internal failure (pipeline/setup
-  errors).
+- **Exit codes** match `vaani-bench`: `0` success, `64` invalid input, `70`
+  internal failure. `64` covers input the program can *identify* as invalid:
+  a bad or unreadable WAV, a missing or empty model file, and a model file
+  whose 4-byte header is not the ggml magic the vendored loader requires
+  (`WhisperRecognizer` checks it before constructing a context, including a
+  named case for GGUF files, which this pre-GGUF build cannot load).
+
+  **A model with valid ggml magic but corrupt or truncated contents aborts
+  the process instead of exiting `64`.** The vendored loader signals a failed
+  load by returning `false`, and SwiftWhisper force-unwraps that into a trap,
+  so there is no error for the adapter to catch and turn into an exit code.
+  The header pre-flight narrows this to files that are plausibly models; it
+  does not close it. Running the decode in a separate process and treating a
+  non-zero child status as invalid input is the known complete fix. It is not
+  taken here.
+
 - **Timing.** The printed decode time is always labelled `measured on this
   machine, single run, not a benchmark`. It is one unrepeated wall-clock
   reading on whatever machine ran it — not a benchmark, and not comparable

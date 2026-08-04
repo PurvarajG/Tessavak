@@ -5,7 +5,8 @@ import VaaniPacks
 
 /// Wires a decoded WAV file through `LivePipelineCoordinator` and prints the
 /// result, following `vaani-bench`'s exit-code convention: `0` success, `64`
-/// invalid input (bad WAV, missing model file), `70` internal failure.
+/// invalid input (bad WAV, missing/empty/non-ggml model file), `70` internal
+/// failure.
 enum TranscribeRunner {
     static func run(
         modelPath: String,
@@ -38,8 +39,24 @@ enum TranscribeRunner {
             throw ExitCode(70)
         }
 
-        let coordinator: LivePipelineCoordinator
+        // Built before the rest of the pipeline: a model file the recogniser
+        // can identify as unusable is bad *input*, so it exits 64 like a bad
+        // WAV, not 70.
         let recognizerFactory: @Sendable (Route) -> (any StreamingRecognizer)?
+        do {
+            recognizerFactory = try makeRecognizerFactory(modelPath: modelPath, language: language)
+        } catch let error as VaaniCoreError {
+            let detail: String
+            if case .invalidConfiguration(let message) = error {
+                detail = message
+            } else {
+                detail = "\(error)"
+            }
+            FileHandle.standardError.write(Data("vaani-live: invalid model file: \(detail)\n".utf8))
+            throw ExitCode(64)
+        }
+
+        let coordinator: LivePipelineCoordinator
         do {
             let pack = try PackLoader.bundledBAPSGujarati()
             let accumulatorConfiguration = try EvidenceAccumulatorConfiguration(
@@ -65,7 +82,6 @@ enum TranscribeRunner {
             let renderer = OutputRenderer(pack: pack)
             let protectedTerms = Set(pack.entries.filter(\.protected).map(\.canonical))
             let detector = try LanguageHintDetector(language: language)
-            recognizerFactory = try makeRecognizerFactory(modelPath: modelPath, language: language)
 
             coordinator = LivePipelineCoordinator(
                 accumulatorConfiguration: accumulatorConfiguration,

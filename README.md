@@ -64,7 +64,11 @@ Phase 3). **No model ships with this package and none is downloaded**, so
 the harness cannot run until you supply one. A WAV outside 16 kHz
 mono 16-bit PCM is rejected with the exact `ffmpeg -ar 16000 -ac 1` command
 needed to convert it. Exit codes match `vaani-bench`: `0` success, `64`
-invalid input, `70` internal failure.
+invalid input, `70` internal failure. A model file that is not a ggml
+whisper model is rejected by header check before any decode; a model with
+valid magic but corrupt contents still aborts the process, because the
+vendored loader traps rather than returning an error — see
+`docs/initial-build.md`.
 
 ## Prerequisites
 

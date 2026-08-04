@@ -49,6 +49,8 @@ public struct WhisperRecognizer: StreamingRecognizer {
             throw VaaniCoreError.invalidConfiguration("whisper model file must not be empty")
         }
 
+        try Self.requireGGMLMagic(at: modelFileURL)
+
         let modelName = modelFileURL.deletingPathExtension().lastPathComponent
         self.identity = try ModelIdentity(
             provider: "whisper.cpp",
@@ -92,6 +94,46 @@ public struct WhisperRecognizer: StreamingRecognizer {
     }
 
     private static let pinnedRevision = "c340197966ebd264f3135d3955874b40f8ed58bc"
+
+    /// The vendored loader reads the first four bytes as a little-endian
+    /// `uint32` and rejects anything but this value (`whisper_model_load`,
+    /// "verify magic"). It does so by returning `false`, which SwiftWhisper
+    /// force-unwraps into a trap — so the check has to happen here, before a
+    /// context is ever constructed.
+    private static let ggmlMagic: UInt32 = 0x6767_6d6c
+
+    /// Reads only the 4-byte header, never the model body: a `.bin` model is
+    /// hundreds of megabytes and this runs before every session.
+    ///
+    /// This is a header check and nothing more. A file with valid magic whose
+    /// contents are corrupt or truncated still traps inside the loader.
+    private static func requireGGMLMagic(at url: URL) throws {
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+
+        let header = Array((try handle.read(upToCount: 4)) ?? Data())
+        guard header.count == 4 else {
+            throw VaaniCoreError.invalidConfiguration(
+                "whisper model file is too short to identify: needed 4 magic bytes, read \(header.count)"
+            )
+        }
+
+        let magic =
+            UInt32(header[0]) | UInt32(header[1]) << 8 | UInt32(header[2]) << 16
+            | UInt32(header[3]) << 24
+        guard magic != ggmlMagic else { return }
+
+        if header == Array("GGUF".utf8) {
+            throw VaaniCoreError.invalidConfiguration(
+                "whisper model file is in GGUF format; this build vendors a pre-GGUF "
+                    + "whisper.cpp and requires a ggml-*.bin model"
+            )
+        }
+        let found = header.map { String(format: "%02x", $0) }.joined(separator: " ")
+        throw VaaniCoreError.invalidConfiguration(
+            "whisper model file is not a ggml whisper model: expected magic 6c 6d 67 67, found \(found)"
+        )
+    }
 
     private var languageDistribution: LanguageDistribution {
         // SwiftWhisper passes `.auto` through to whisper.cpp, but its public
