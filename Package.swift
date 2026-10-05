@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "VaaniCore",
+    name: "Tessavak",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "VaaniCore", targets: ["VaaniCore"]),
-        .library(name: "VaaniPacks", targets: ["VaaniPacks"]),
-        .library(name: "VaaniAdapters", targets: ["VaaniAdapters"]),
-        .library(name: "VaaniWhisper", targets: ["VaaniWhisper"]),
-        .executable(name: "vaani-bench", targets: ["VaaniBench"]),
-        .executable(name: "vaani-live", targets: ["VaaniLive"]),
+        .library(name: "TessavakCore", targets: ["TessavakCore"]),
+        .library(name: "TessavakPacks", targets: ["TessavakPacks"]),
+        .library(name: "TessavakAdapters", targets: ["TessavakAdapters"]),
+        .library(name: "TessavakWhisper", targets: ["TessavakWhisper"]),
+        .executable(name: "tessavak-bench", targets: ["TessavakBench"]),
+        .executable(name: "tessavak-live", targets: ["TessavakLive"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
@@ -20,54 +20,54 @@ let package = Package(
         ),
     ],
     targets: [
-        .target(name: "VaaniCore"),
+        .target(name: "TessavakCore"),
         .target(
-            name: "VaaniPacks",
-            dependencies: ["VaaniCore"],
+            name: "TessavakPacks",
+            dependencies: ["TessavakCore"],
             resources: [.process("Resources")]
         ),
-        .target(name: "VaaniAdapters", dependencies: ["VaaniCore"]),
+        .target(name: "TessavakAdapters", dependencies: ["TessavakCore"]),
         .target(
-            name: "VaaniWhisper",
+            name: "TessavakWhisper",
             dependencies: [
-                "VaaniCore",
+                "TessavakCore",
                 .product(name: "SwiftWhisper", package: "SwiftWhisper"),
             ]
         ),
         .executableTarget(
-            name: "VaaniBench",
+            name: "TessavakBench",
             dependencies: [
-                "VaaniCore",
-                "VaaniPacks",
-                "VaaniAdapters",
+                "TessavakCore",
+                "TessavakPacks",
+                "TessavakAdapters",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
-        // vaani-live is single-model: VaaniWhisper serves every route. Real
+        // tessavak-live is single-model: TessavakWhisper serves every route. Real
         // dual-recogniser routing is Phase 3 work.
         .executableTarget(
-            name: "VaaniLive",
+            name: "TessavakLive",
             dependencies: [
-                "VaaniCore",
-                "VaaniPacks",
-                "VaaniWhisper",
+                "TessavakCore",
+                "TessavakPacks",
+                "TessavakWhisper",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
-        .testTarget(name: "VaaniCoreTests", dependencies: ["VaaniCore"]),
-        .testTarget(name: "VaaniPacksTests", dependencies: ["VaaniPacks"]),
+        .testTarget(name: "TessavakCoreTests", dependencies: ["TessavakCore"]),
+        .testTarget(name: "TessavakPacksTests", dependencies: ["TessavakPacks"]),
         .testTarget(
-            name: "VaaniAdaptersTests",
-            dependencies: ["VaaniAdapters", "VaaniCore", "VaaniPacks"]
+            name: "TessavakAdaptersTests",
+            dependencies: ["TessavakAdapters", "TessavakCore", "TessavakPacks"]
         ),
         .testTarget(
-            name: "VaaniBenchTests",
-            dependencies: ["VaaniBench", "VaaniCore", "VaaniPacks", "VaaniAdapters"]
+            name: "TessavakBenchTests",
+            dependencies: ["TessavakBench", "TessavakCore", "TessavakPacks", "TessavakAdapters"]
         ),
-        .testTarget(name: "VaaniWhisperTests", dependencies: ["VaaniWhisper", "VaaniCore"]),
+        .testTarget(name: "TessavakWhisperTests", dependencies: ["TessavakWhisper", "TessavakCore"]),
         .testTarget(
-            name: "VaaniLiveTests",
-            dependencies: ["VaaniLive", "VaaniCore"]
+            name: "TessavakLiveTests",
+            dependencies: ["TessavakLive", "TessavakCore"]
         ),
     ]
 )

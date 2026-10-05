@@ -1,4 +1,4 @@
-# VaaniCore Task List
+# TessavakCore Task List
 
 ## Initial build (complete)
 
@@ -11,17 +11,17 @@
 - [x] Task 6: Output policies and end-to-end pipeline
 - [x] Checkpoint B: Core decision-path review
 - [x] Task 7: Replay adapter and deterministic fixture
-- [x] Task 8: VaaniBench CLI, reports, and regression gate
+- [x] Task 8: TessavakBench CLI, reports, and regression gate
 - [x] Task 9: Whole-slice verification and developer handoff
 - [x] Checkpoint C: Runnable initial-build review
 
 ## Phase 1 audit remediation (complete)
 
-- [x] Tasks 1–8 per `docs/superpowers/plans/2026-07-24-vaanicore-audit-remediation.md`
+- [x] Tasks 1–8 per `docs/superpowers/plans/2026-07-24-tessavak-audit-remediation.md`
 
 ## Phase 2 — live orchestration contracts and first real recognizer
 
-Plan: `docs/superpowers/plans/2026-07-24-vaanicore-phase2-live-contracts.md`
+Plan: `docs/superpowers/plans/2026-07-24-tessavak-phase2-live-contracts.md`
 
 - [x] Task 1: Core audio and utterance value types (`Audio.swift`, AudioTypesTests)
 - [x] Task 2: Core-owned async `StreamingRecognizer`/`Detector` protocols + reusable contract tests
@@ -30,8 +30,8 @@ Plan: `docs/superpowers/plans/2026-07-24-vaanicore-phase2-live-contracts.md`
 - [x] Task 5: `ReplayStreamingRecognizer` shim; contract suite + coordinator end-to-end against `Fixtures/replay/smoke.json`
 - [x] Task 6: Extend `scripts/verify.sh` import scan; docs update for contracts half; full gate green
 - [x] Checkpoint A: Owner review before third-party dependency lands
-- [x] Task 7: `VaaniWhisper` target — whisper.cpp SPM dependency (pinned revision) + `WhisperRecognizer` adapter; model-gated tests skip without `VAANI_WHISPER_MODEL`
-- [x] Task 8: `vaani-live` file-driven CLI harness (WAV in → transcript + decision codes + labelled single-run timing)
+- [x] Task 7: `TessavakWhisper` target — whisper.cpp SPM dependency (pinned revision) + `WhisperRecognizer` adapter; model-gated tests skip without `TESSAVAK_WHISPER_MODEL`
+- [x] Task 8: `tessavak-live` file-driven CLI harness (WAV in → transcript + decision codes + labelled single-run timing)
 - [x] Final verification: `./scripts/verify.sh`, full suite (253 tests, +35), docs/README updated, licence + revision recorded
 
 Landed beyond the plan, from running the code rather than testing it:
@@ -39,14 +39,14 @@ Landed beyond the plan, from running the code rather than testing it:
 - [x] `RecognitionCandidate.confidence` is `Double?` — absent confidence is no
       longer scored as zero, and no longer trips the low-confidence secondary
 - [x] `WhisperRecognizer` rejects non-ggml model files by header magic before
-      the vendored loader traps on them; `vaani-live` exits 64, not 70
+      the vendored loader traps on them; `tessavak-live` exits 64, not 70
 
 ## Gating the Phase 2 merge to `main`
 
 - [ ] Run the three model-gated tests at least once against a real
       `ggml-*.bin` — they have never executed, so no test has yet exercised
       the recogniser adapter against a real decode
-- [ ] One real `vaani-live` decode: segment timings, language mapping, and
+- [ ] One real `tessavak-live` decode: segment timings, language mapping, and
       whether the real API populates `confidence` or leaves it `nil`
 - [ ] Only then merge Phase 2 to `main`
 

@@ -15,26 +15,26 @@ swift test --parallel
 echo "==> swift format lint --recursive --strict Sources Tests Package.swift"
 swift format lint --recursive --strict Sources Tests Package.swift
 
-echo "==> checking VaaniCore for forbidden framework imports"
-if rg -n 'import (SwiftUI|AppKit|SwiftData|CoreData|AVFoundation|CoreML)' Sources/VaaniCore; then
-    echo "VaaniCore contains a forbidden framework import" >&2
+echo "==> checking TessavakCore for forbidden framework imports"
+if rg -n 'import (SwiftUI|AppKit|SwiftData|CoreData|AVFoundation|CoreML)' Sources/TessavakCore; then
+    echo "TessavakCore contains a forbidden framework import" >&2
     exit 1
 fi
 
-# VaaniCore imports Foundation only: any other import is a third-party or
+# TessavakCore imports Foundation only: any other import is a third-party or
 # framework dependency creeping into the engine core.
-echo "==> checking VaaniCore imports nothing but Foundation"
-if rg -n --no-heading '^\s*import\s+' Sources/VaaniCore | grep -v 'import Foundation$'; then
-    echo "VaaniCore imports a module other than Foundation" >&2
+echo "==> checking TessavakCore imports nothing but Foundation"
+if rg -n --no-heading '^\s*import\s+' Sources/TessavakCore | grep -v 'import Foundation$'; then
+    echo "TessavakCore imports a module other than Foundation" >&2
     exit 1
 fi
 
-# whisper.cpp arrives in Task 7 and must stay confined to the VaaniWhisper
+# whisper.cpp arrives in Task 7 and must stay confined to the TessavakWhisper
 # target; nothing else may link a recogniser implementation.
 echo "==> checking whisper stays out of the core, adapters, packs, and bench"
 if rg -n -i 'import (whisper|SwiftWhisper|whisper_cpp)' \
-    Sources/VaaniCore Sources/VaaniAdapters Sources/VaaniPacks Sources/VaaniBench; then
-    echo "found a whisper import outside the VaaniWhisper target" >&2
+    Sources/TessavakCore Sources/TessavakAdapters Sources/TessavakPacks Sources/TessavakBench; then
+    echo "found a whisper import outside the TessavakWhisper target" >&2
     exit 1
 fi
 
@@ -52,13 +52,13 @@ fi
 mkdir -p "${REPORT_DIR}"
 
 echo "==> running release smoke benchmark into ${REPORT_DIR}"
-swift run -c release vaani-bench run \
+swift run -c release tessavak-bench run \
     --manifest Fixtures/replay/smoke.json \
     --output "${REPORT_DIR}" \
     --baseline Fixtures/baseline/smoke-baseline.json
 
 echo "==> scanning generated report and diagnostics for transcript/audio leakage"
-if rg -n '"(text|transcript|audio|rawCandidate)"\s*:' "${REPORT_DIR}/report.json" Sources/VaaniCore/Types/Diagnostics.swift; then
+if rg -n '"(text|transcript|audio|rawCandidate)"\s*:' "${REPORT_DIR}/report.json" Sources/TessavakCore/Types/Diagnostics.swift; then
     echo "found a forbidden transcript/audio field in the generated report or diagnostics" >&2
     exit 1
 fi
